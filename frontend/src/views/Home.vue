@@ -59,13 +59,3 @@ const quickLinks = [
 	},
 ]
 </script>
-
-<style scoped>
-:deep(ion-content::part(scroll)) {
-	scrollbar-width: none;
-}
-
-:deep(ion-content::part(scroll)::-webkit-scrollbar) {
-	display: none;
-}
-</style>

@@ -59,3 +59,13 @@ const props = defineProps({
 	},
 })
 </script>
+
+<style scoped>
+ion-content::part(scroll) {
+	scrollbar-width: none;
+}
+
+ion-content::part(scroll)::-webkit-scrollbar {
+	display: none;
+}
+</style>
