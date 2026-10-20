@@ -52,7 +52,7 @@
 						</div>
 
 						<div class="flex flex-col bg-surface-base rounded-4" v-if="notifications.data?.length">
-							<router-link
+							<a
 								:class="[
 									'flex flex-row items-start p-4 justify-between border-b before:mt-3',
 									`before:content-[''] before:mr-2 before:shrink-0 before:w-1.5 before:h-1.5 before:rounded-full`,
@@ -60,8 +60,8 @@
 								]"
 								v-for="item in notifications.data"
 								:key="item.name"
-								:to="getItemRoute(item)"
-								@click="markAsRead(item.name)"
+								:href="router.resolve(getItemRoute(item)).href"
+								@click="openNotification(item, $event)"
 							>
 								<EmployeeAvatar :userID="item.from_user" size="lg" />
 								<div class="flex flex-col gap-0.5 grow ml-3">
@@ -73,7 +73,7 @@
 										{{ dayjs(item.creation).fromNow() }}
 									</div>
 								</div>
-							</router-link>
+							</a>
 						</div>
 						<div v-if="notifications.data?.length && notifications.hasNextPage" class="flex">
 							<Button
@@ -101,7 +101,7 @@
 <script setup>
 import { IonContent, IonPage } from "@ionic/vue"
 import { useRouter } from "vue-router"
-import { createResource, Icon } from "frappe-ui"
+import { call, createResource, Icon, toast } from "frappe-ui"
 
 import { computed, inject, onMounted } from "vue"
 import EmployeeAvatar from "@/components/EmployeeAvatar.vue"
@@ -138,6 +138,33 @@ function markAsRead(name) {
 			},
 		}
 	)
+}
+
+let notificationNavigation = 0
+
+async function openNotification(item, event) {
+	if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)
+		return
+	event.preventDefault()
+	const request = ++notificationNavigation
+	const originRoute = router.currentRoute.value
+	const isCurrentNavigation = () =>
+		request === notificationNavigation && router.currentRoute.value === originRoute
+
+	try {
+		await call("frappe.client.get", {
+			doctype: item.reference_document_type,
+			name: item.reference_document_name,
+		})
+		if (!isCurrentNavigation()) return
+		markAsRead(item.name)
+		await router.push(getItemRoute(item))
+	} catch (error) {
+		if (!isCurrentNavigation()) return
+		toast.error(__("Could not open notification"), {
+			description: error.messages?.join("\n") || error.message,
+		})
+	}
 }
 
 function getItemRoute(item) {
