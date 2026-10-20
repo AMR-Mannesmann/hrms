@@ -27,23 +27,41 @@
 					@click="setOpen(!open)"
 				>
 					<span class="flex min-w-0 items-center gap-2">
-						<span class="lucide-calendar-days size-4 shrink-0 text-ink-gray-5" aria-hidden="true" />
+						<span
+							class="lucide-calendar-days size-4 shrink-0 text-ink-gray-5"
+							aria-hidden="true"
+						/>
 						<span class="flex min-w-0 flex-col leading-tight">
 							<span class="text-xs text-ink-gray-5">
 								{{ index === 0 ? __("From Date") : __("To Date") }}
 							</span>
-							<span class="truncate text-ink-gray-9">{{ formatDate(range[index]) }}</span>
+							<span class="truncate text-ink-gray-9">
+								{{
+									index === 1 && allowOpenEnd && !range[index]
+										? __("No end date")
+										: formatDate(range[index])
+								}}
+							</span>
 						</span>
 					</span>
 				</Button>
 			</div>
 		</template>
-		<template #actions="{ clear, close, disabled }">
+		<template #actions="{ fromDate, clear, close, disabled }">
+			<Button
+				v-if="allowOpenEnd"
+				variant="ghost"
+				class="h-auto py-2"
+				:disabled="disabled || !fromDate"
+				@click="setOpenEnded(fromDate, clear, close)"
+			>
+				<span class="block max-w-12 whitespace-normal">{{ __("No end date") }}</span>
+			</Button>
 			<Button
 				variant="ghost"
 				:label="__('Clear')"
 				:disabled="disabled"
-				@click="clear(); updateRange([]); close()"
+				@click="clearRange(clear, close)"
 			/>
 		</template>
 	</DateRangePicker>
@@ -56,6 +74,7 @@ import { Button, DateRangePicker } from "frappe-ui"
 const props = defineProps({
 	fromDate: { type: String, default: "" },
 	toDate: { type: String, default: "" },
+	allowOpenEnd: Boolean,
 	disabled: Boolean,
 })
 const emit = defineEmits(["update:fromDate", "update:toDate"])
@@ -70,9 +89,24 @@ const range = computed(() =>
 function updateRange(value) {
 	if (props.disabled) return
 	const [fromDate = "", toDate = ""] = value || []
-	if (value?.length && !(fromDate && toDate)) return
+	if (value?.length && (!fromDate || (!toDate && !props.allowOpenEnd))) return
 	emit("update:fromDate", fromDate)
 	emit("update:toDate", toDate)
+}
+
+function setOpenEnded(fromDate, clear, close) {
+	if (props.disabled || !fromDate) return
+	// Reset the picker's last emitted range before setting an open-ended value.
+	clear()
+	updateRange([fromDate, ""])
+	close()
+}
+
+function clearRange(clear, close) {
+	if (props.disabled) return
+	clear()
+	updateRange([])
+	close()
 }
 
 function formatDate(value) {

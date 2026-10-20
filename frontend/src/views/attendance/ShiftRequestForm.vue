@@ -9,19 +9,31 @@
 				:fields="formFields.data"
 				:id="props.id"
 				@validateForm="validateForm"
-			/>
+			>
+				<template #from_date="{ readOnly, isFieldReadOnly }">
+					<DateRangeField
+						v-model:from-date="shiftRequest.from_date"
+						v-model:to-date="shiftRequest.to_date"
+						:allow-open-end="!toDateField?.reqd"
+						:disabled="readOnly || !toDateField || isFieldReadOnly(toDateField)"
+					/>
+					<ErrorMessage :message="toDateField?.error_message" />
+				</template>
+			</FormView>
 		</ion-content>
 	</ion-page>
 </template>
 
 <script setup>
 import { IonPage, IonContent } from "@ionic/vue"
-import { createResource } from "frappe-ui"
-import { ref, watch, inject } from "vue"
+import { createResource, ErrorMessage } from "frappe-ui"
+import { computed, ref, watch, inject } from "vue"
 
 import FormView from "@/components/FormView.vue"
+import DateRangeField from "@/components/DateRangeField.vue"
 
 const employee = inject("$employee")
+const __ = inject("$translate")
 
 const props = defineProps({
 	id: {
@@ -39,12 +51,20 @@ const formFields = createResource({
 	params: { doctype: "Shift Request" },
 	auto: true,
 	transform(data) {
-		if (props.id) return data
-		return data.filter(
-			(field) => !["employee", "employee_name", "status", "company"].includes(field.fieldname)
-		)
+		const fields = props.id
+			? data
+			: data.filter(
+					(field) => !["employee", "employee_name", "status", "company"].includes(field.fieldname)
+			  )
+		return fields.map((field) => {
+			if (field.fieldname === "from_date") field.label = __("Shift Period")
+			if (field.fieldname === "to_date") field.hidden = true
+			return field
+		})
 	},
 })
+
+const toDateField = computed(() => formFields.data?.find((field) => field.fieldname === "to_date"))
 
 createResource({
 	url: "hrms.api.get_shift_request_approvers",
