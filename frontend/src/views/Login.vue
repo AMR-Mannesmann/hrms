@@ -49,9 +49,8 @@
 							type="text"
 							autocomplete="username"
 						/>
-						<TextInput
+						<Password
 							:label="__('Password')"
-							type="password"
 							placeholder="••••••"
 							v-model="password"
 							autocomplete="current-password"
@@ -136,7 +135,7 @@
 <script setup>
 import { IonPage, IonContent } from "@ionic/vue"
 import { inject, reactive, ref } from "vue"
-import { TextInput, Button, ErrorMessage, Dialog, createResource } from "frappe-ui"
+import { TextInput, Password, Button, ErrorMessage, Dialog, createResource } from "frappe-ui"
 
 import FrappeHRLogo from "@/components/icons/FrappeHRLogo.vue"
 

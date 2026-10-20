@@ -1,15 +1,16 @@
 <template>
 	<div v-if="showField" class="flex flex-col gap-1.5">
 		<span
-			v-if="!['Check', 'Section Break', 'Column Break'].includes(fieldtype)"
+			v-if="!hideLabel && !['Check', 'Section Break', 'Column Break'].includes(fieldtype)"
 			class="block text-sm leading-5 text-ink-gray-6"
 			:class="reqd ? `after:content-['_*'] after:text-ink-red-6` : ''"
 		>
 			{{ label }}
 		</span>
 
+		<slot v-if="$slots.default" :readOnly="isReadOnly" />
 		<Combobox
-			v-if="fieldtype === 'Select' || documentList"
+			v-else-if="fieldtype === 'Select' || documentList"
 			v-bind="$attrs"
 			:placeholder="__('Select {0}', [label])"
 			:options="selectionList"
@@ -81,18 +82,28 @@
 				{{ label }}
 			</h2>
 		</div>
-		<TextInput
+		<DatePicker
 			v-else-if="fieldtype === 'Date'"
 			v-bind="$attrs"
-			type="date"
 			:model-value="modelValue || ''"
 			:placeholder="__('Select {0}', [label])"
+			:format="dateFormat"
+			:typeable="false"
 			:disabled="isReadOnly"
 			:min="minDate"
 			:max="maxDate"
 			@update:model-value="updateValue"
-			@change="emit('change', $event.target.value)"
-		/>
+			@change="!isReadOnly && emit('change', $event)"
+		>
+			<template #actions="{ clear, disabled }">
+				<Button
+					variant="ghost"
+					:label="__('Clear')"
+					:disabled="disabled || !modelValue"
+					@click="clear"
+				/>
+			</template>
+		</DatePicker>
 		<DateTimePicker
 			v-else-if="fieldtype === 'Datetime'"
 			v-bind="$attrs"
@@ -107,7 +118,16 @@
 </template>
 
 <script setup>
-import { Checkbox, Combobox, DateTimePicker, ErrorMessage, Textarea, TextInput } from "frappe-ui"
+import {
+	Button,
+	Checkbox,
+	Combobox,
+	DatePicker,
+	DateTimePicker,
+	ErrorMessage,
+	Textarea,
+	TextInput,
+} from "frappe-ui"
 import {
 	articleToolbar,
 	Editor,
@@ -121,12 +141,14 @@ import { EditorUploads, editorUploadsKey } from "@/composables/editorUploads"
 
 const __ = inject("$translate")
 const dayjs = inject("$dayjs")
+const dateFormat = (window.frappe?.boot?.sysdefaults?.date_format || "yyyy-mm-dd").toUpperCase()
 const props = defineProps({
 	fieldtype: String,
 	fieldname: String,
 	modelValue: { type: [String, Number, Boolean, Array, Object], default: undefined },
 	default: { type: [String, Number, Boolean, Array, Object], default: undefined },
 	label: String,
+	hideLabel: Boolean,
 	options: [String, Array],
 	linkFilters: Object,
 	documentList: Array,

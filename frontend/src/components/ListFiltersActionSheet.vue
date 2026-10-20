@@ -45,16 +45,19 @@
 							{{ __(filter.label) }}
 						</div>
 						<div class="flex flex-row items-center gap-3">
-							<Combobox
+							<Select
 								v-if="filterConditionMap[filter.fieldtype]"
 								class="mt-1 w-[75px]"
 								:options="filterConditionMap[filter.fieldtype]"
+								:aria-label="__('Operator for {0}', [__(filter.label)])"
 								v-model="filters[filter.fieldname].condition"
 							/>
 							<FormField
 								class="w-full"
 								:fieldtype="filter.fieldtype"
 								:fieldname="filter.fieldname"
+								:label="__(filter.label)"
+								:hideLabel="true"
 								:options="filter.options"
 								v-model="filters[filter.fieldname].value"
 							/>
@@ -79,7 +82,7 @@
 <script setup>
 import { computed } from "vue"
 import FormField from "@/components/FormField.vue"
-import { Combobox } from "frappe-ui"
+import { Select } from "frappe-ui"
 
 const props = defineProps({
 	filterConfig: {

@@ -98,7 +98,16 @@
 									:minDate="field.minDate"
 									:maxDate="field.maxDate"
 									:addSectionPadding="fieldList[0].name !== field.name"
-								/>
+								>
+									<template v-if="$slots[field.fieldname]" #default="{ readOnly }">
+										<slot
+											:name="field.fieldname"
+											:field="field"
+											:readOnly="readOnly"
+											:isFieldReadOnly="isFieldReadOnly"
+										/>
+									</template>
+								</FormField>
 							</template>
 
 							<!-- Attachment upload -->
@@ -139,7 +148,16 @@
 						:errorMessage="field.error_message"
 						:minDate="field.minDate"
 						:maxDate="field.maxDate"
-					/>
+					>
+						<template v-if="$slots[field.fieldname]" #default="{ readOnly }">
+							<slot
+								:name="field.fieldname"
+								:field="field"
+								:readOnly="readOnly"
+								:isFieldReadOnly="isFieldReadOnly"
+							/>
+						</template>
+					</FormField>
 
 					<!-- Attachment upload -->
 					<div class="flex flex-row gap-2 items-center justify-center p-5" v-if="isFileUploading">

@@ -37,14 +37,15 @@
 		</div>
 	</div>
 
-	<ion-modal
+	<BottomSheet
 		v-if="settings.data?.allow_employee_checkin_from_mobile_app"
-		ref="modal"
-		trigger="open-checkin-modal"
-		:initial-breakpoint="1"
-		:breakpoints="[0, 1]"
+		v-model:open="showCheckinSheet"
+		:title="nextAction.label"
+		:dismissible="!checkins.insert.loading"
 	>
-		<div class="h-120 w-full flex flex-col items-center justify-center gap-5 p-4 mb-5">
+		<div
+			class="flex w-full flex-col items-center gap-5 px-4 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
+		>
 			<div class="flex flex-col gap-1.5 mt-2 items-center justify-center">
 				<div class="text-2xl-bold">
 					{{ dayjs(checkinTimestamp).format("hh:mm:ss a") }}
@@ -59,7 +60,7 @@
 					{{ locationStatus }}
 				</span>
 
-				<div class="rounded-4 border-4 translate-z-0 block overflow-hidden w-full h-170">
+				<div class="rounded-4 border-4 translate-z-0 block overflow-hidden w-full h-[170px]">
 					<iframe
 						width="100%"
 						height="170"
@@ -83,13 +84,12 @@
 				{{ __("Confirm {0}", [nextAction.label]) }}
 			</Button>
 		</div>
-	</ion-modal>
+	</BottomSheet>
 </template>
 
 <script setup>
-import { createListResource, toast, Icon } from "frappe-ui"
+import { BottomSheet, createListResource, toast, Icon } from "frappe-ui"
 import { computed, inject, ref, onMounted, onBeforeUnmount } from "vue"
-import { IonModal, modalController } from "@ionic/vue"
 
 import { formatTimestamp } from "@/utils/formatters"
 import { settings } from "@/data/settings"
@@ -101,6 +101,7 @@ const employee = inject("$employee")
 const dayjs = inject("$dayjs")
 const __ = inject("$translate")
 const checkinTimestamp = ref(null)
+const showCheckinSheet = ref(false)
 const latitude = ref(0)
 const longitude = ref(0)
 const locationStatus = ref("")
@@ -156,6 +157,7 @@ const fetchLocation = () => {
 
 const handleEmployeeCheckin = () => {
 	checkinTimestamp.value = dayjs().format("YYYY-MM-DD HH:mm:ss")
+	showCheckinSheet.value = true
 
 	if (settings.data?.allow_geolocation_tracking) {
 		fetchLocation()
@@ -182,7 +184,7 @@ const submitLog = (logType) => {
 					return
 				}
 
-				modalController.dismiss()
+				showCheckinSheet.value = false
 				toast.success(__("Success"), {
 					description: __("{0} successful!", [actionLabel]),
 				})

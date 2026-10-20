@@ -10,21 +10,81 @@
 				:id="props.id"
 				:showAttachmentView="true"
 				@validateForm="validateForm"
-			/>
+			>
+				<template #from_date="{ readOnly, isFieldReadOnly }">
+					<DateRangePicker
+						:model-value="leaveDateRange"
+						:format="dateFormat"
+						:typeable="false"
+						:disabled="readOnly || !toDateField || isFieldReadOnly(toDateField)"
+						@update:model-value="
+							updateLeaveDateRange($event, readOnly || !toDateField || isFieldReadOnly(toDateField))
+						"
+					>
+						<template #trigger="{ setOpen, open, disabled }">
+							<div
+								class="grid grid-cols-2 divide-x divide-outline-gray-2 rounded-4 border bg-surface-base text-sm transition-colors"
+								:class="
+									open
+										? 'border-outline-gray-4 ring-2 ring-outline-gray-2'
+										: 'border-outline-gray-2 hover:border-outline-gray-3'
+								"
+							>
+								<Button
+									v-for="(fieldname, index) in ['from_date', 'to_date']"
+									:key="fieldname"
+									variant="ghost"
+									class="h-auto min-w-0 justify-start px-3 py-2 text-left"
+									:class="index === 0 ? 'rounded-r-0' : 'rounded-l-0'"
+									:disabled="disabled"
+									aria-haspopup="dialog"
+									:aria-expanded="open"
+									@click="setOpen(!open)"
+								>
+									<span class="flex min-w-0 items-center gap-2">
+										<span
+											class="lucide-calendar-days size-4 shrink-0 text-ink-gray-5"
+											aria-hidden="true"
+										/>
+										<span class="flex min-w-0 flex-col leading-tight">
+											<span class="text-xs text-ink-gray-5">
+												{{ index === 0 ? __("From Date") : __("To Date") }}
+											</span>
+											<span class="truncate text-ink-gray-9">
+												{{ formatLeaveDate(leaveApplication[fieldname]) }}
+											</span>
+										</span>
+									</span>
+								</Button>
+							</div>
+						</template>
+						<template #actions="{ clear, close, disabled }">
+							<Button
+								variant="ghost"
+								:label="__('Clear')"
+								:disabled="disabled"
+								@click="clear(); updateLeaveDateRange([], disabled); close()"
+							/>
+						</template>
+					</DateRangePicker>
+					<ErrorMessage :message="toDateField?.error_message" />
+				</template>
+			</FormView>
 		</ion-content>
 	</ion-page>
 </template>
 
 <script setup>
 import { IonPage, IonContent } from "@ionic/vue"
-import { createResource } from "frappe-ui"
-import { ref, watch, inject, nextTick } from "vue"
+import { Button, createResource, DateRangePicker, ErrorMessage } from "frappe-ui"
+import { computed, ref, watch, inject, nextTick } from "vue"
 
 import FormView from "@/components/FormView.vue"
 
 const dayjs = inject("$dayjs")
 const __ = inject("$translate")
 const today = dayjs().format("YYYY-MM-DD")
+const dateFormat = (window.frappe?.boot?.sysdefaults?.date_format || "yyyy-mm-dd").toUpperCase()
 
 const props = defineProps({
 	id: {
@@ -65,6 +125,8 @@ const formFields = createResource({
 
 		return fields.map((field) => {
 			if (field.fieldname === "half_day_date") field.hidden = true
+			if (field.fieldname === "from_date") field.label = __("Leave Period")
+			if (field.fieldname === "to_date") field.hidden = true
 
 			if (field.fieldname === "posting_date") field.default = today
 
@@ -77,6 +139,24 @@ const formFields = createResource({
 	},
 })
 formFields.reload()
+
+const toDateField = computed(() => formFields.data?.find((field) => field.fieldname === "to_date"))
+const leaveDateRange = computed(() => {
+	const { from_date, to_date } = leaveApplication.value
+	return from_date || to_date ? [from_date || "", to_date || ""] : []
+})
+
+function updateLeaveDateRange(range, readOnly) {
+	if (readOnly) return
+	const [fromDate = "", toDate = ""] = range || []
+	if (range?.length && !(fromDate && toDate)) return
+	leaveApplication.value.from_date = fromDate
+	leaveApplication.value.to_date = toDate
+}
+
+function formatLeaveDate(value) {
+	return value ? dayjs(value).format(dateFormat) : __("Add date")
+}
 
 const leaveApprovalDetails = createResource({
 	url: "hrms.api.get_leave_approval_details",

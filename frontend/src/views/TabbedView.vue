@@ -1,13 +1,15 @@
 <template>
 	<ion-page>
-		<ion-tabs>
-			<ion-router-outlet></ion-router-outlet>
+		<div class="flex h-full flex-col sm:w-96">
+			<div class="relative min-h-0 flex-1">
+				<ion-router-outlet :animated="false" />
+			</div>
 			<BottomTabs />
-		</ion-tabs>
+		</div>
 	</ion-page>
 </template>
 
 <script setup>
-import { IonTabs, IonPage, IonRouterOutlet } from "@ionic/vue"
+import { IonPage, IonRouterOutlet } from "@ionic/vue"
 import BottomTabs from "@/components/BottomTabs.vue"
 </script>
