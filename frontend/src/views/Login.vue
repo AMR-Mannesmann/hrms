@@ -59,7 +59,7 @@
 						<ErrorMessage :message="errorMessage" />
 						<Button
 							type="submit"
-							:loading="isSubmitting"
+							:loading="session.login.loading"
 							variant="solid"
 							class="disabled:bg-surface-gray-8 disabled:text-ink-base !mt-6"
 						>
@@ -120,7 +120,7 @@
 						<ErrorMessage :message="errorMessage" />
 						<Button
 							type="submit"
-							:loading="isSubmitting"
+							:loading="session.otp.loading"
 							variant="solid"
 							class="disabled:bg-surface-gray-8 disabled:text-ink-base !mt-6"
 						>
@@ -143,7 +143,6 @@ import FrappeHRLogo from "@/components/icons/FrappeHRLogo.vue"
 const email = ref(null)
 const password = ref(null)
 const errorMessage = ref("")
-const isSubmitting = ref(false)
 
 const resetPassword = reactive({
 	showDialog: false,
@@ -159,10 +158,7 @@ const otp = reactive({
 const session = inject("$session")
 const __ = inject("$translate")
 
-async function submit() {
-	if (isSubmitting.value) return
-	isSubmitting.value = true
-	errorMessage.value = ""
+async function submit(e) {
 	try {
 		let response
 		if (otp.showDialog) {
@@ -191,9 +187,7 @@ async function submit() {
 			}
 		}
 	} catch (error) {
-		errorMessage.value = error.messages?.join("\n") || error.message
-	} finally {
-		isSubmitting.value = false
+		errorMessage.value = error.messages.join("\n")
 	}
 }
 

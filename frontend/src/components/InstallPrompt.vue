@@ -94,8 +94,7 @@ window.addEventListener("appinstalled", () => {
 })
 
 async function install() {
-	if (!deferredPrompt.value) return
-	await deferredPrompt.value.prompt()
+	deferredPrompt.value.prompt()
 	showDialog.value = false
 }
 </script>

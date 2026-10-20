@@ -1,28 +1,15 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import frappeui from "frappe-ui/vite";
+import fs from "fs";
 import path from "path";
 
+// https://vitejs.dev/config/
 export default defineConfig({
-	plugins: [
-		vue(),
-		{
-			name: "roster-dev-boot",
-			transformIndexHtml(html, context) {
-				return context.server
-					? html.replace(/<script id="roster-boot">[\s\S]*?<\/script>/, "")
-					: html;
-			},
-		},
-		frappeui({
-			frontendRoute: "/hr/roster",
-			frappeProxy: { port: 8081 },
-			jinjaBootData: false,
-			buildConfig: false,
-		}),
-	],
+	plugins: [vue(), frappeui({ frappeProxy: false, jinjaBootData: false, buildConfig: false })],
 	server: {
 		port: 8081,
+		proxy: getProxyOptions(),
 		allowedHosts: true,
 	},
 	resolve: {
@@ -31,7 +18,7 @@ export default defineConfig({
 		},
 	},
 	build: {
-		outDir: "../hrms/public/roster",
+		outDir: `../hrms/public/roster`,
 		emptyOutDir: true,
 		target: "es2015",
 		commonjsOptions: {
@@ -39,3 +26,41 @@ export default defineConfig({
 		},
 	},
 });
+
+function getProxyOptions() {
+	const config = getCommonSiteConfig();
+	const webserver_port = config ? config.webserver_port : 8000;
+	if (!config) {
+		console.log("No common_site_config.json found, using default port 8000");
+	}
+	return {
+		"^/(app|login|api|assets|files|private)": {
+			target: `http://127.0.0.1:${webserver_port}`,
+			ws: true,
+			router: function (req) {
+				const site_name = req.headers.host.split(":")[0];
+				console.log(`Proxying ${req.url} to ${site_name}:${webserver_port}`);
+				return `http://${site_name}:${webserver_port}`;
+			},
+		},
+	};
+}
+
+function getCommonSiteConfig() {
+	let currentDir = path.resolve(".");
+	// traverse up till we find frappe-bench with sites directory
+	while (currentDir !== "/") {
+		if (
+			fs.existsSync(path.join(currentDir, "sites")) &&
+			fs.existsSync(path.join(currentDir, "apps"))
+		) {
+			let configPath = path.join(currentDir, "sites", "common_site_config.json");
+			if (fs.existsSync(configPath)) {
+				return JSON.parse(fs.readFileSync(configPath));
+			}
+			return null;
+		}
+		currentDir = path.resolve(currentDir, "..");
+	}
+	return null;
+}

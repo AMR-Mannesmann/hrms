@@ -42,7 +42,7 @@ const props = defineProps({
 	},
 	filters: {
 		type: Object,
-		default: () => ({}),
+		default: {},
 	},
 	disabled: {
 		type: Boolean,
@@ -117,8 +117,7 @@ watch(
 
 watch(
 	() => props.filters,
-	() => reloadOptions(""),
-	{ deep: true }
+	() => reloadOptions(''),
 )
 
 watch(

@@ -51,7 +51,7 @@
 						type="number"
 						class="w-20"
 						v-model="advance.allocated_amount"
-						@update:model-value="(v) => (advance.selected = Number(v) > 0)"
+						@update:model-value="(v) => (advance.selected = Boolean(v))"
 						@click.stop
 						:disabled="isReadOnly"
 						:max="advance.unclaimed_amount"

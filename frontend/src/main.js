@@ -2,9 +2,14 @@ import { createApp } from "vue"
 import App from "./App.vue"
 import router from "./router"
 import { initSocket } from "./socket"
-import { loadBootData } from "./boot"
 
-import { Button, setConfig, frappeRequest, resourcesPlugin, FormControl } from "frappe-ui"
+import {
+	Button,
+	setConfig,
+	frappeRequest,
+	resourcesPlugin,
+	FormControl,
+} from "frappe-ui"
 import { translationsPlugin } from "./plugins/translationsPlugin.js"
 import EmptyState from "@/components/EmptyState.vue"
 
@@ -28,6 +33,7 @@ import "./theme/variables.css"
 import "./main.css"
 
 const app = createApp(App)
+const socket = initSocket()
 
 setConfig("resourceFetcher", frappeRequest)
 app.use(resourcesPlugin)
@@ -37,9 +43,17 @@ app.component("Button", Button)
 app.component("FormControl", FormControl)
 app.component("EmptyState", EmptyState)
 
+app.use(router)
+app.use(IonicVue, getIonicConfig())
+
+if (session?.isLoggedIn && !employeeResource?.data) {
+	employeeResource.reload()
+}
+
 app.provide("$session", session)
 app.provide("$user", userResource)
 app.provide("$employee", employeeResource)
+app.provide("$socket", socket)
 app.provide("$dayjs", dayjs)
 
 const registerServiceWorker = async () => {
@@ -79,18 +93,20 @@ const registerServiceWorker = async () => {
 	}
 }
 
-async function initializeApp() {
-	await loadBootData()
-	app.provide("$socket", initSocket())
+router.isReady().then(async () => {
+	if (import.meta.env.DEV) {
+		await frappeRequest({
+			url: "/api/method/hrms.www.hrms.get_context_for_dev",
+		}).then(async (values) => {
+			if (!window.frappe) window.frappe = {}
+			window.frappe.boot = values
+		})
+	}
 
-	if (session.isLoggedIn && !employeeResource.data) employeeResource.reload()
-	app.use(router)
-	app.use(IonicVue, getIonicConfig())
-	await router.isReady()
-	await translationsPlugin.isReady()
+	await translationsPlugin.isReady();
 	registerServiceWorker()
 	app.mount("#app")
-}
+})
 
 router.beforeEach(async (to, _, next) => {
 	let isLoggedIn = session.isLoggedIn
@@ -114,7 +130,10 @@ router.beforeEach(async (to, _, next) => {
 		await employeeResource.promise
 		// user should be an employee to access the app
 		// since all views are employee specific
-		if (!employeeResource?.data || employeeResource?.data?.user_id !== userResource.data.name) {
+		if (
+			!employeeResource?.data ||
+			employeeResource?.data?.user_id !== userResource.data.name
+		) {
 			next({ name: "InvalidEmployee" })
 		} else if (["Login", "ForgotPassword"].includes(to.name)) {
 			next({ name: "Home" })
@@ -125,5 +144,3 @@ router.beforeEach(async (to, _, next) => {
 		next()
 	}
 })
-
-initializeApp()

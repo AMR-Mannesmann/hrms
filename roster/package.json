@@ -6,18 +6,17 @@
   "scripts": {
     "dev": "vite",
     "serve": "vite preview",
-    "typecheck": "tsc --noEmit",
     "build": "vite build --base=/assets/hrms/roster/ && yarn copy-html-entry",
     "copy-html-entry": "cp ../hrms/public/roster/index.html ../hrms/www/roster.html"
   },
   "dependencies": {
-    "@vitejs/plugin-vue": "^6.0.10",
+    "@vitejs/plugin-vue": "^4.4.0",
     "autoprefixer": "^10.4.19",
     "dayjs": "^1.11.11",
     "frappe-ui": "1.0.2",
     "postcss": "^8.4.5",
     "tailwindcss": "^3.4.3",
-    "vite": "^7.3.2",
+    "vite": "^5.4.10",
     "vue": "^3.5.12",
     "vue-router": "^4.3.2"
   },

@@ -40,7 +40,6 @@
 							label: __('Menu'),
 							icon: 'lucide-more-horizontal',
 							variant: 'ghost',
-							disabled: isUpdatingDocument,
 						}"
 					/>
 				</div>
@@ -114,7 +113,7 @@
 							<FileUploaderView
 								v-else-if="showAttachmentView && index === 0"
 								v-model="fileAttachments"
-								:inert="isUpdatingDocument"
+								:inert="isCompletingInsert"
 								@handleFileSelect="handleFileSelect"
 								@handleFileDelete="handleFileDelete"
 							/>
@@ -151,7 +150,7 @@
 					<FileUploaderView
 						v-else-if="showAttachmentView"
 						v-model="fileAttachments"
-						:inert="isUpdatingDocument"
+						:inert="isCompletingInsert"
 						@handleFileSelect="handleFileSelect"
 						@handleFileDelete="handleFileDelete"
 					/>
@@ -169,9 +168,7 @@
 
 			<!-- workflow actions -->
 			<WorkflowActionSheet
-				v-else-if="
-					!isFormDirty && workflow?.hasWorkflow && !editorUploadBusy && !isUpdatingDocument
-				"
+				v-else-if="!isFormDirty && workflow?.hasWorkflow && !editorUploadBusy"
 				:doc="documentResource.doc"
 				:workflow="workflow"
 				@workflowApplied="reloadDoc()"
@@ -194,10 +191,8 @@
 					:class="formButton === 'Cancel' ? 'shadow' : ''"
 					@click="formButton === 'Save' ? saveForm() : submitOrCancelForm()"
 					:variant="formButton === 'Cancel' ? 'subtle' : 'solid'"
-					:disabled="editorUploadBusy || isFileUploading || isUpdatingDocument"
-					:loading="
-						isCompletingInsert || isUpdatingDocument || documentResource?.setValue?.loading
-					"
+					:disabled="editorUploadBusy"
+					:loading="isCompletingInsert || documentResource?.setValue?.loading"
 				>
 					{{ createdDocument ? __("Retry Attachments") : __(formButton) }}
 				</Button>
@@ -219,21 +214,10 @@
 		</template>
 		<template #actions>
 			<div class="grid grid-cols-2 gap-4">
-				<Button
-					variant="outline"
-					class="py-5 w-full"
-					:disabled="isUpdatingDocument"
-					@click="showDeleteDialog = false"
-				>
+				<Button variant="outline" class="py-5 w-full" @click="showDeleteDialog = false">
 					{{ __("Cancel") }}
 				</Button>
-				<Button
-					variant="solid"
-					theme="red"
-					:disabled="isUpdatingDocument"
-					@click="handleDocDelete"
-					class="py-5 w-full"
-				>
+				<Button variant="solid" theme="red" @click="handleDocDelete" class="py-5 w-full">
 					{{ __("Delete") }}
 				</Button>
 			</div>
@@ -253,18 +237,13 @@
 		</template>
 		<template #actions>
 			<div class="grid grid-cols-2 gap-4">
-				<Button
-					variant="outline"
-					class="py-5 w-full"
-					:disabled="isUpdatingDocument"
-					@click="showSubmitDialog = false"
-				>
+				<Button variant="outline" class="py-5 w-full" @click="showSubmitDialog = false">
 					{{ __("No") }}
 				</Button>
 				<Button
 					variant="solid"
 					@click="handleDocUpdate('submit')"
-					:disabled="editorUploadBusy || isUpdatingDocument"
+					:disabled="editorUploadBusy"
 					class="py-5 w-full"
 				>
 					{{ __("Yes") }}
@@ -286,18 +265,13 @@
 		</template>
 		<template #actions>
 			<div class="grid grid-cols-2 gap-4">
-				<Button
-					variant="outline"
-					class="py-5 w-full"
-					:disabled="isUpdatingDocument"
-					@click="showCancelDialog = false"
-				>
+				<Button variant="outline" class="py-5 w-full" @click="showCancelDialog = false">
 					{{ __("No") }}
 				</Button>
 				<Button
 					variant="solid"
 					@click="handleDocUpdate('cancel')"
-					:disabled="editorUploadBusy || isUpdatingDocument"
+					:disabled="editorUploadBusy"
 					class="py-5 w-full"
 				>
 					{{ __("Yes") }}
@@ -328,7 +302,6 @@ import WorkflowActionSheet from "@/components/WorkflowActionSheet.vue"
 
 import { FileAttachment, guessStatusColor } from "@/composables"
 import useWorkflow from "@/composables/workflow"
-import { updateDocumentLifecycle } from "@/composables/documentLifecycle"
 import { EditorUploads, editorUploadsKey } from "@/composables/editorUploads"
 import { getCompanyCurrency } from "@/data/currencies"
 import { getLeaveStatus } from "@/data/leaves"
@@ -401,14 +374,9 @@ let isFileUploading = ref(false)
 let workflow = ref(null)
 const createdDocument = ref(null)
 const isCompletingInsert = ref(false)
-const isUpdatingDocument = ref(false)
 const editorUploads = new EditorUploads(
 	() => ({ doctype: props.doctype, name: props.id || createdDocument.value?.name }),
-	() =>
-		!isCompletingInsert.value &&
-		!isUpdatingDocument.value &&
-		!createdDocument.value &&
-		!documentResource?.setValue?.loading
+	() => !isCompletingInsert.value && !createdDocument.value && !documentResource?.setValue?.loading
 )
 const editorUploadBusy = editorUploads.busy
 provide(editorUploadsKey, editorUploads)
@@ -480,13 +448,16 @@ const attachedFiles = createResource({
 		dt: props.doctype,
 		dn: props.id,
 	},
+	transform(data) {
+		return data.map((file) => (file.uploaded = true))
+	},
 	onSuccess(data) {
-		fileAttachments.value = data.map((file) => ({ ...file, uploaded: true }))
+		fileAttachments.value = data
 	},
 })
 
 const handleFileSelect = (e) => {
-	if (isUpdatingDocument.value) return
+	if (isCompletingInsert.value) return
 	if (props.id) {
 		uploadAllAttachments(props.doctype, props.id, [...e.target.files])
 	} else {
@@ -495,7 +466,7 @@ const handleFileSelect = (e) => {
 }
 
 const handleFileDelete = async (fileObj) => {
-	if (isUpdatingDocument.value) return
+	if (isCompletingInsert.value) return
 	if (fileObj.uploaded) {
 		const fileAttachment = new FileAttachment(fileObj)
 		await fileAttachment.delete()
@@ -657,38 +628,29 @@ function validateMandatoryFields() {
 }
 
 async function handleDocUpdate(action) {
-	if (isUpdatingDocument.value || editorUploadBusy.value || isFileUploading.value) return
-	if (!documentResource.doc || !validateMandatoryFields()) return
+	if (editorUploadBusy.value) return
+	if (documentResource.doc) {
+		let params = { ...formModel.value }
 
-	isUpdatingDocument.value = true
-	try {
-		if (action === "submit" || action === "cancel") {
-			await updateDocumentLifecycle(documentResource.originalDoc, action)
-			await documentResource.reload()
-		} else {
-			await documentResource.setValue.submit({ ...formModel.value })
-			await documentResource.get.promise
+		if (!validateMandatoryFields()) return
+
+		if (action == "submit") {
+			params.docstatus = 1
+		} else if (action == "cancel") {
+			params.docstatus = 2
 		}
+
+		await documentResource.setValue.submit(params)
+		await documentResource.get.promise
 		resetForm()
-		await nextTick()
-		showSubmitDialog.value = false
-		showCancelDialog.value = false
-	} catch (error) {
-		formErrorMessage.value = error.messages?.join("\n") || error.message
-		if (action) toast.error(__("Error"), { description: formErrorMessage.value })
-	} finally {
-		isUpdatingDocument.value = false
 	}
+
+	if (action === "submit") showSubmitDialog.value = false
+	else if (action === "cancel") showCancelDialog.value = false
 }
 
 function saveForm() {
-	if (
-		isUpdatingDocument.value ||
-		editorUploadBusy.value ||
-		isCompletingInsert.value ||
-		isFileUploading.value
-	)
-		return
+	if (editorUploadBusy.value || isCompletingInsert.value) return
 	emit("validateForm")
 
 	if (props.id) {
@@ -699,13 +661,7 @@ function saveForm() {
 }
 
 function submitOrCancelForm() {
-	if (
-		isUpdatingDocument.value ||
-		isFormDirty.value ||
-		editorUploadBusy.value ||
-		isFileUploading.value
-	)
-		return
+	if (isFormDirty.value || editorUploadBusy.value) return
 
 	if (formModel.value.docstatus === 0) {
 		emit("validateForm")
@@ -716,13 +672,11 @@ function submitOrCancelForm() {
 }
 
 function handleDocDelete() {
-	if (isUpdatingDocument.value) return
 	documentResource.delete.submit()
 	showDeleteDialog.value = false
 }
 
 async function reloadDoc() {
-	if (isUpdatingDocument.value) return
 	await documentResource.reload()
 	resetForm()
 }
@@ -767,8 +721,7 @@ async function setFormattedCurrency() {
 
 const isFormReadOnly = computed(() => {
 	if (!isFormReady.value) return true
-	if (isCompletingInsert.value || isUpdatingDocument.value || documentResource?.setValue?.loading)
-		return true
+	if (isCompletingInsert.value || documentResource?.setValue?.loading) return true
 	if (createdDocument.value) return true
 	if (!props.id) return false
 

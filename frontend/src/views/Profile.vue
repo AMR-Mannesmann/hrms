@@ -1,7 +1,7 @@
 <template>
 	<ion-page>
 		<ion-content class="ion-padding">
-			<div v-if="user.data" class="flex flex-col h-screen w-screen">
+			<div class="flex flex-col h-screen w-screen">
 				<div class="w-full sm:w-96">
 					<header
 						class="flex flex-row bg-surface-base shadow-sm py-4 px-3 items-center justify-between border-b sticky top-0 z-10"
@@ -94,7 +94,7 @@
 				:breakpoints="[0, 1]"
 			>
 				<ProfileInfoModal
-					v-if="selectedItem && employeeDoc.doc && employeeDocType.data"
+					v-if="selectedItem"
 					:title="selectedItem.title"
 					:data="
 						selectedItem.fields.map((field) => {
@@ -108,20 +108,17 @@
 						})
 					"
 				/>
-				<div v-else class="flex items-center justify-center gap-2 p-6">
-					<LoadingIndicator class="h-4 w-4" />
-					<span>{{ __("Loading...") }}</span>
-				</div>
 			</ion-modal>
-		</ion-content>
-	</ion-page>
+
+	</ion-content>
+</ion-page>
 </template>
 
 <script setup>
 import { computed, inject, ref, watch, onMounted, onBeforeUnmount } from "vue"
 import { useRouter } from "vue-router"
-import { IonPage, IonContent, IonModal } from "@ionic/vue"
-import { Icon, LoadingIndicator, createDocumentResource, createResource, toast } from "frappe-ui"
+import { IonPage, IonContent } from "@ionic/vue"
+import { Icon, createDocumentResource, createResource, toast } from "frappe-ui"
 
 import { showErrorAlert } from "@/utils/dialogs"
 import { formatCurrency } from "@/utils/formatters"
@@ -169,7 +166,12 @@ const profileLinks = [
 	{
 		icon: "lucide-book",
 		title: __("Contact Information"),
-		fields: ["cell_number", "personal_email", "company_email", "preferred_email"],
+		fields: [
+			"cell_number",
+			"personal_email",
+			"company_email",
+			"preferred_email",
+		],
 	},
 	{
 		icon: "lucide-dollar-sign",
@@ -193,7 +195,9 @@ const isInfoModalOpen = ref(false)
 const selectedItem = ref(null)
 
 const allowPushNotifications = computed(
-	() => window.frappe?.boot.push_relay_server_url && arePushNotificationsEnabled.data
+	() =>
+		window.frappe?.boot.push_relay_server_url &&
+		arePushNotificationsEnabled.data
 )
 
 const openInfoModal = async (request) => {
@@ -237,7 +241,9 @@ const employeeDocType = createResource({
 })
 
 const getFieldInfo = (fieldname) => {
-	const field = employeeDocType.data.find((field) => field.fieldname === fieldname)
+	const field = employeeDocType.data.find(
+		(field) => field.fieldname === fieldname
+	)
 	return [__(field?.label, null, "Employee"), field?.fieldtype]
 }
 
@@ -260,6 +266,8 @@ const logout = async () => {
 		showErrorAlert(msg)
 	}
 }
+
+
 
 onMounted(() => {
 	socket.emit("doctype_subscribe", DOCTYPE)

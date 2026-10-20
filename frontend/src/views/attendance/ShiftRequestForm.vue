@@ -22,7 +22,6 @@ import { ref, watch, inject } from "vue"
 import FormView from "@/components/FormView.vue"
 
 const employee = inject("$employee")
-const __ = inject("$translate")
 
 const props = defineProps({
 	id: {
@@ -95,6 +94,6 @@ function validateDates(from_date, to_date) {
 }
 
 function validateForm() {
-	if (!props.id) shiftRequest.value.employee = employee.data.name
+	shiftRequest.value.employee = employee.data.name
 }
 </script>

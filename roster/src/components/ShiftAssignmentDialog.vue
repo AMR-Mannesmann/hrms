@@ -163,7 +163,7 @@ type Form = {
 	start_date: string;
 	end_date: string;
 	status: Status;
-	shift_schedule_assignment: string;
+	schedule?: string;
 };
 
 interface Props {

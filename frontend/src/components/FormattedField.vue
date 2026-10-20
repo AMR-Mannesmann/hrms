@@ -1,5 +1,5 @@
 <template>
-	<div v-if="props.value == null || props.value === ''" class="text-ink-gray-5 text-base">-</div>
+	<div v-if="!props.value" class="text-ink-gray-5 text-base">-</div>
 
 	<Badge
 		v-else-if="props.fieldtype === 'Select'"

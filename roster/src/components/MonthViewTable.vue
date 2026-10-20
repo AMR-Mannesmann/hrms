@@ -83,7 +83,14 @@
 							dropCell.employee = employee.name;
 							dropCell.date = day.date;
 						"
-						@drop="dropShift(employee.name, day.date)"
+						@drop="
+							() => {
+								if (!hasSameShift(employee.name, day.date)) {
+									loading = true;
+									swapShift.submit();
+								}
+							}
+						"
 					>
 						<div class="flex flex-col space-y-1.5 translate-x-0 translate-y-0">
 							<!-- Holiday -->
@@ -113,15 +120,31 @@
 							<div
 								v-for="shift in events.data?.[employee.name]?.[day.date]?.shift ||
 								[]"
-								@mouseenter="hoveredCell.shift = shift.name"
-								@mouseleave="hoveredCell.shift = ''"
+								@mouseenter="
+									hoveredCell.shift = shift.name;
+									hoveredCell.shift_type = shift.shift_type;
+									hoveredCell.shift_location = shift.shift_location;
+									hoveredCell.shift_status = shift.status;
+								"
+								@mouseleave="
+									hoveredCell.shift = '';
+									hoveredCell.shift_type = '';
+									hoveredCell.shift_location = '';
+									hoveredCell.shift_status = '';
+								"
 								@dragenter="dropCell.shift = shift.name"
 								@dragleave="dropCell.shift = ''"
 								:draggable="true"
 								@dragstart="
-									(event) => startDragging(event, shift, employee.name, day.date)
+									(event) => {
+										if (event.dataTransfer) {
+											event.dataTransfer.effectAllowed = 'move';
+										}
+									}
 								"
-								@dragend="stopDragging"
+								@dragend="
+									if (!loading) dropCell = { employee: '', date: '', shift: '' };
+								"
 								class="rounded-4 border-2 p-2 cursor-pointer"
 								:class="[
 									shift.status === 'Inactive' && 'border-dashed',
@@ -130,9 +153,9 @@
 										dropCell.shift === shift.name &&
 										!hasSameShift(employee.name, day.date) &&
 										'scale-105',
-									dragSource?.employee === employee.name &&
-										dragSource?.date === day.date &&
-										dragSource?.name === shift.name &&
+									hoveredCell.employee === employee.name &&
+										hoveredCell.date === day.date &&
+										hoveredCell.shift === shift.name &&
 										dropCell.employee &&
 										'opacity-0',
 								]"
@@ -295,29 +318,11 @@ const hoveredCell = ref({
 	employee: "",
 	date: "",
 	shift: "",
+	shift_type: "",
+	shift_location: "",
+	shift_status: "",
 });
 const dropCell = ref({ employee: "", date: "", shift: "" });
-const dragSource = ref<(Shift & { employee: string; date: string }) | null>(null);
-
-function startDragging(event: DragEvent, shift: Shift, employee: string, date: string) {
-	dragSource.value = { ...shift, employee, date };
-	if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
-}
-
-function stopDragging() {
-	if (loading.value) return;
-	dropCell.value = { employee: "", date: "", shift: "" };
-	dragSource.value = null;
-}
-
-function dropShift(employee: string, date: string) {
-	if (!dragSource.value || hasSameShift(employee, date)) return;
-	dropCell.value.employee = employee;
-	dropCell.value.date = date;
-	loading.value = true;
-	// The resource's onError callback displays the failure and clears loading.
-	swapShift.submit().catch(() => {});
-}
 
 const daysOfMonth = computed(() => {
 	const daysOfMonth = [];
@@ -348,16 +353,16 @@ watch(
 );
 
 watch(loading, (val) => {
-	if (!val) stopDragging();
+	if (!val) dropCell.value = { employee: "", date: "", shift: "" };
 });
 
 const hasSameShift = (employee: string, day: string) =>
 	Array.isArray(events.data?.[employee]?.[day]?.shift) &&
 	events.data?.[employee]?.[day].shift.some(
 		(shift: Shift) =>
-			shift.shift_type === dragSource.value?.shift_type &&
-			shift.shift_location === dragSource.value?.shift_location &&
-			shift.status === dragSource.value?.status,
+			shift.shift_type === hoveredCell.value.shift_type &&
+			shift.shift_location === hoveredCell.value.shift_location &&
+			shift.status === hoveredCell.value.shift_status,
 	);
 
 // RESOURCES
@@ -393,8 +398,8 @@ const swapShift = createResource({
 	url: "hrms.api.roster.swap_shift",
 	makeParams() {
 		return {
-			src_shift: dragSource.value?.name,
-			src_date: dragSource.value?.date,
+			src_shift: hoveredCell.value.shift,
+			src_date: hoveredCell.value.date,
 			tgt_employee: dropCell.value.employee,
 			tgt_date: dropCell.value.date,
 			tgt_shift: dropCell.value.shift,

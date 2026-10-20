@@ -97,6 +97,6 @@ function validateDates(from_date, to_date) {
 }
 
 function validateForm() {
-	if (!props.id) attendanceRequest.value.employee = employee.data.name
+	attendanceRequest.value.employee = employee.data.name
 }
 </script>

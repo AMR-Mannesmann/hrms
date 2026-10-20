@@ -111,7 +111,6 @@ const reloadOptions = (searchTextVal) => {
 		params: {
 			txt: searchTextVal,
 			doctype: props.doctype,
-			filters: props.filters,
 		},
 	});
 	options.reload();
@@ -139,7 +138,6 @@ watch(
 watch(
 	() => props.filters,
 	() => reloadOptions(""),
-	{ deep: true },
 );
 
 watch(

@@ -1,7 +1,7 @@
 <template>
 	<div v-if="showField" class="flex flex-col gap-1.5">
 		<span
-			v-if="!hideLabel && !['Check', 'Section Break', 'Column Break'].includes(fieldtype)"
+			v-if="!['Check', 'Section Break', 'Column Break'].includes(fieldtype)"
 			class="block text-sm leading-5 text-ink-gray-6"
 			:class="reqd ? `after:content-['_*'] after:text-ink-red-6` : ''"
 		>
@@ -52,6 +52,7 @@
 			:disabled="isReadOnly"
 			class="min-h-15"
 			@update:model-value="updateValue"
+			@change="emit('change', $event.target.value)"
 		/>
 		<Checkbox
 			v-else-if="fieldtype === 'Check'"
@@ -60,14 +61,16 @@
 			:model-value="checkedValue"
 			:disabled="isReadOnly"
 			@update:model-value="updateValue"
+			@change="emit('change', $event.target.checked)"
 		/>
 		<TextInput
 			v-else-if="fieldtype === 'Data' || isNumberType"
 			v-bind="$attrs"
-			:type="isNumberType && !isReadOnly ? 'number' : 'text'"
+			:type="isNumberType && !(fieldtype === 'Currency' && isReadOnly) ? 'number' : 'text'"
 			:model-value="modelValue"
 			:disabled="isReadOnly"
 			@update:model-value="updateValue"
+			@change="emit('change', $event.target.value)"
 		/>
 		<div v-else-if="fieldtype === 'Section Break'" :class="addSectionPadding ? 'mt-2' : ''">
 			<h2
@@ -78,34 +81,25 @@
 				{{ label }}
 			</h2>
 		</div>
-		<DatePicker
+		<TextInput
 			v-else-if="fieldtype === 'Date'"
 			v-bind="$attrs"
+			type="date"
 			:model-value="modelValue || ''"
 			:placeholder="__('Select {0}', [label])"
-			:format="dateFormat"
 			:disabled="isReadOnly"
 			:min="minDate"
 			:max="maxDate"
 			@update:model-value="updateValue"
-		/>
-		<TimePicker
-			v-else-if="fieldtype === 'Time'"
-			v-bind="$attrs"
-			:model-value="modelValue || ''"
-			:placeholder="__('Select {0}', [label])"
-			:disabled="isReadOnly"
-			@update:model-value="updateValue"
+			@change="emit('change', $event.target.value)"
 		/>
 		<DateTimePicker
 			v-else-if="fieldtype === 'Datetime'"
 			v-bind="$attrs"
 			:model-value="modelValue || ''"
 			:placeholder="__('Select {0}', [label])"
-			:format="`${dateFormat} HH:mm:ss`"
+			format="DD-MM-YYYY HH:mm:ss"
 			:disabled="isReadOnly"
-			:min="minDate"
-			:max="maxDate"
 			@update:model-value="updateValue"
 		/>
 		<ErrorMessage :message="errorMessage" />
@@ -113,16 +107,7 @@
 </template>
 
 <script setup>
-import {
-	Checkbox,
-	Combobox,
-	DatePicker,
-	DateTimePicker,
-	ErrorMessage,
-	Textarea,
-	TextInput,
-	TimePicker,
-} from "frappe-ui"
+import { Checkbox, Combobox, DateTimePicker, ErrorMessage, Textarea, TextInput } from "frappe-ui"
 import {
 	articleToolbar,
 	Editor,
@@ -142,7 +127,6 @@ const props = defineProps({
 	modelValue: { type: [String, Number, Boolean, Array, Object], default: undefined },
 	default: { type: [String, Number, Boolean, Array, Object], default: undefined },
 	label: String,
-	hideLabel: Boolean,
 	options: [String, Array],
 	linkFilters: Object,
 	documentList: Array,
@@ -156,7 +140,6 @@ const props = defineProps({
 	addSectionPadding: { type: Boolean, default: true },
 })
 const emit = defineEmits(["change", "update:modelValue"])
-const dateFormat = (window.frappe?.boot?.sysdefaults?.date_format || "yyyy-mm-dd").toUpperCase()
 const editorExtensions = [RichTextKit]
 const editorUploads = inject(editorUploadsKey, null) || new EditorUploads()
 const uploadEditorFile = (file, options) => editorUploads.upload(file, options)
@@ -164,32 +147,50 @@ const isNumberType = computed(() => ["Int", "Float", "Currency"].includes(props.
 const isReadOnly = computed(() => Boolean(props.readOnly || props.disabled))
 const checkedValue = computed(() => [true, 1, "1"].includes(props.modelValue))
 const showField = computed(() => {
-	if (props.hidden || props.fieldtype === "Table") return false
-	const isEmpty = props.modelValue == null || props.modelValue === ""
-	return !(
+	if (
 		props.readOnly &&
-		isEmpty &&
+		!props.modelValue &&
 		!["Section Break", "Column Break"].includes(props.fieldtype)
 	)
+		return false
+
+	return props.fieldtype !== "Table" && !props.hidden
 })
 const selectionList = computed(() => {
-	if (props.documentList) return props.documentList
-	const values = Array.isArray(props.options) ? props.options : (props.options || "").split("\n")
-	return values.map((value) => (typeof value === "object" ? value : { label: __(value), value }))
+	if (props.fieldtype === "Link" && props.documentList) {
+		return props.documentList
+	} else if (props.fieldtype === "Select" && props.options) {
+		return props.options.split("\n").map((option) => ({
+			label: __(option),
+			value: option,
+		}))
+	}
+
+	return []
 })
 
 function updateValue(value) {
 	if (isReadOnly.value) return
 	emit("update:modelValue", value)
-	emit("change", value)
 }
 
-onMounted(() => {
-	if (props.modelValue != null && props.modelValue !== "") return
-	let value = props.default
-	if (props.fieldtype === "Check") value = [true, 1, "1"].includes(value)
-	else if (props.fieldtype === "Date" && value === "Today") value = dayjs().format("YYYY-MM-DD")
-	else if (isNumberType.value && value != null && value !== "") value = parseFloat(value)
-	emit("update:modelValue", value ?? "")
-})
+function setDefaultValue() {
+	if (props.modelValue) return
+
+	if (props.default) {
+		if (props.fieldtype === "Check") {
+			emit("update:modelValue", props.default === "1" ? true : false)
+		} else if (props.fieldtype === "Date" && props.default === "Today") {
+			emit("update:modelValue", dayjs().format("YYYY-MM-DD"))
+		} else if (isNumberType.value) {
+			emit("update:modelValue", parseFloat(props.default || 0))
+		} else {
+			emit("update:modelValue", props.default)
+		}
+	} else {
+		props.fieldtype === "Check" ? emit("update:modelValue", false) : emit("update:modelValue", "")
+	}
+}
+
+onMounted(setDefaultValue)
 </script>

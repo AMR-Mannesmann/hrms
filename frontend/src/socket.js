@@ -4,7 +4,7 @@ import { getCachedListResource, getCachedResource } from "frappe-ui"
 
 export function initSocket() {
 	let host = window.location.hostname
-	let siteName = window.frappe?.boot?.site_name || window.site_name
+	let siteName = window.site_name
 	let socketio_port = window.frappe?.boot?.socketio_port || 9000
 	let port = window.location.port ? `:${socketio_port}` : ""
 	let protocol = port ? "http" : "https"

@@ -82,7 +82,6 @@
 			class="grid w-full grid-cols-2 gap-3 sticky bottom-0 border-t z-[100] p-4"
 		>
 			<Button
-				:disabled="isUpdatingDocument"
 				@click="updateDocumentStatus({ status: 'Rejected' })"
 				class="w-full py-5"
 				variant="subtle"
@@ -95,7 +94,6 @@
 			</Button>
 
 			<Button
-				:disabled="isUpdatingDocument"
 				@click="updateDocumentStatus({ status: 'Approved' })"
 				class="w-full py-5"
 				variant="solid"
@@ -117,12 +115,7 @@
 			"
 			class="flex w-full flex-row items-center justify-between gap-3 sticky bottom-0 border-t z-[100] p-4"
 		>
-			<Button
-				:disabled="isUpdatingDocument"
-				@click="updateDocumentStatus({ docstatus: 1 })"
-				class="w-full py-5"
-				variant="solid"
-			>
+			<Button @click="updateDocumentStatus({ docstatus: 1 })" class="w-full py-5" variant="solid">
 				{{ __("Submit") }}
 			</Button>
 		</div>
@@ -132,7 +125,6 @@
 			class="flex w-full flex-row items-center justify-between gap-3 sticky bottom-0 border-t z-[100] p-4"
 		>
 			<Button
-				:disabled="isUpdatingDocument"
 				@click="updateDocumentStatus({ docstatus: 2 })"
 				class="w-full py-5"
 				variant="subtle"
@@ -168,7 +160,6 @@ import { settings } from "@/data/settings"
 import { formatCurrency } from "@/utils/formatters"
 
 import useWorkflow from "@/composables/workflow"
-import { updateDocumentLifecycle } from "@/composables/documentLifecycle"
 
 const __ = inject("$translate")
 
@@ -191,7 +182,6 @@ const router = useRouter()
 let showPreviewModal = ref(false)
 let selectedFile = ref({})
 let workflow = ref(null)
-const isUpdatingDocument = ref(false)
 
 function showFilePreview(fileObj) {
 	selectedFile.value = fileObj
@@ -235,15 +225,6 @@ function hasPermission(action) {
 		const isSelfLeave = document?.doc?.employee === sessionEmployee?.data?.name
 		if (isSelfLeave && settings.data?.prevent_self_leave_approval) return false
 		return permittedWriteFields.data?.includes(approvalField.value)
-	}
-	if (action === "approval" && props.modelValue.doctype === "Expense Claim") {
-		return (
-			docPermissions.data?.permissions.write &&
-			permittedWriteFields.data?.includes(approvalField.value)
-		)
-	}
-	if (action === "approval" && props.modelValue.doctype === "Shift Request") {
-		return docPermissions.data?.permissions.submit && permittedWriteFields.data?.includes("status")
 	}
 	return docPermissions.data?.permissions[action]
 }
@@ -299,33 +280,32 @@ const getFailureMessage = ({ status = "", docstatus = 0 }) => {
 	}
 }
 
-const updateDocumentStatus = async ({ status = "", docstatus = 0 }) => {
-	if (isUpdatingDocument.value) return
-	isUpdatingDocument.value = true
-	try {
-		if (docstatus) {
-			await updateDocumentLifecycle(document.originalDoc, docstatus === 1 ? "submit" : "cancel")
-			await document.reload()
-			modalController.dismiss()
-		} else {
-			await document.setValue.submit({ [approvalField.value]: status })
-			await document.reload()
+const updateDocumentStatus = ({ status = "", docstatus = 0 }) => {
+	let updateValues = {}
+
+	if (status) updateValues[approvalField.value] = status
+	if (docstatus) updateValues.docstatus = docstatus
+
+	document.setValue.submit(
+		{ ...updateValues },
+		{
+			onSuccess() {
+				if (docstatus !== 0) modalController.dismiss()
+
+				toast.success(__("Success"), {
+					description: getSuccessMessage({ status, docstatus }),
+				})
+			},
+			onError() {
+				toast.error(__("Error"), {
+					description: getFailureMessage({ status, docstatus }),
+				})
+			},
 		}
-		toast.success(__("Success"), {
-			description: getSuccessMessage({ status, docstatus }),
-		})
-	} catch (error) {
-		toast.error(__("Error"), {
-			description:
-				error.messages?.join("\n") || error.message || getFailureMessage({ status, docstatus }),
-		})
-	} finally {
-		isUpdatingDocument.value = false
-	}
+	)
 }
 
 const openFormView = () => {
-	if (isUpdatingDocument.value) return
 	modalController.dismiss()
 	router.push({
 		name: `${props.modelValue.doctype.replace(/\s+/g, "")}DetailView`,
