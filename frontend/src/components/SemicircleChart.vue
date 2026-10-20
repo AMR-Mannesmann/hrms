@@ -1,12 +1,8 @@
 <template>
-	<svg
-		viewBox="0 0 48 24"
-		preserveAspectRatio="xMidYMin slice"
-		class="h-[84px] w-[84px] -mt-10"
-	>
-		<circle cx="24" cy="24" r="9" fill="#fff"></circle>
+	<svg viewBox="0 0 48 24" preserveAspectRatio="xMidYMin slice" class="h-[84px] w-[84px] -mt-10">
+		<circle cx="24" cy="24" r="9" class="fill-surface-base"></circle>
 		<circle
-			class="stroke-current text-gray-200"
+			class="stroke-current text-ink-gray-1"
 			cx="24"
 			cy="24"
 			r="9"
@@ -37,7 +33,7 @@ const props = defineProps({
 	},
 	colorClass: {
 		type: String,
-		default: "text-orange-500",
+		default: "text-ink-orange-5",
 	},
 })
 

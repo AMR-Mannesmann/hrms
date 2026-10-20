@@ -5,30 +5,32 @@
 		:employeeName="props.doc.employee_name"
 	>
 		<template #left>
-			<ShiftIcon class="h-5 w-5 text-gray-500" />
+			<ShiftIcon class="h-5 w-5 text-ink-gray-4" />
 			<div class="flex flex-col items-start gap-1.5">
-				<div class="text-base font-normal text-gray-800">
+				<div class="text-base font-normal text-ink-gray-7">
 					{{ props.doc.shift_type }}
 				</div>
-				<div class="text-xs font-normal text-gray-500">
+				<div class="text-xs font-normal text-ink-gray-4">
 					<span>{{ props.doc.shift_dates || getDates(props.doc) }}</span>
 					<span v-if="props.doc.to_date">
 						<span class="whitespace-pre"> &middot; </span>
-						<span class="whitespace-nowrap">{{ __("{0}d", [props.doc.total_shift_days || getTotalDays(props.doc)]) }}</span>
+						<span class="whitespace-nowrap">{{
+							__("{0}d", [props.doc.total_shift_days || getTotalDays(props.doc)])
+						}}</span>
 					</span>
 				</div>
 			</div>
 		</template>
 		<template #right>
 			<Badge variant="outline" :theme="colorMap[status]" :label="__(status)" size="md" />
-			<FeatherIcon name="chevron-right" class="h-5 w-5 text-gray-500" />
+			<Icon name="lucide-chevron-right" class="h-5 w-5 text-ink-gray-4" />
 		</template>
 	</ListItem>
 </template>
 
 <script setup>
 import { computed } from "vue"
-import { Badge, FeatherIcon } from "frappe-ui"
+import { Badge, Icon } from "frappe-ui"
 
 import ListItem from "@/components/ListItem.vue"
 import ShiftIcon from "@/components/icons/ShiftIcon.vue"
@@ -56,6 +58,6 @@ const status = computed(() => {
 const colorMap = {
 	Approved: "green",
 	Rejected: "red",
-	Open: "orange",
+	Open: "amber",
 }
 </script>

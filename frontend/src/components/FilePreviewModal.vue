@@ -8,7 +8,7 @@
 		</ion-toolbar>
 	</ion-header>
 	<ion-content>
-		<div class="bg-white h-full w-full overflow-auto touch-pinch-zoom">
+		<div class="bg-surface-base h-full w-full overflow-auto touch-pinch-zoom">
 			<img v-if="isImageFile" :src="src" class="h-auto image-preview" />
 			<iframe v-else :src="src" class="w-full h-full"></iframe>
 		</div>
@@ -39,9 +39,7 @@ const filename = computed(() => {
 })
 
 const src = computed(() => {
-	return props.file.file_url
-		? props.file.file_url
-		: URL.createObjectURL(props.file)
+	return props.file.file_url ? props.file.file_url : URL.createObjectURL(props.file)
 })
 
 const isImageFile = computed(() => {

@@ -1,15 +1,15 @@
 <template>
 	<div class="px-12 py-8 space-y-8">
 		<div class="flex items-center">
-			<FeatherIcon name="calendar" class="h-7 w-7 text-gray-500 mr-2.5" />
-			<span class="font-semibold text-2xl text-gray-500 mr-2">Roster:</span>
-			<span class="font-semibold text-2xl">Month View</span>
+			<span class="lucide-calendar h-7 w-7 text-ink-gray-5 mr-2.5" aria-hidden="true" />
+			<span class="text-3xl-semibold text-ink-gray-5 mr-2">Roster:</span>
+			<span class="text-3xl-semibold">Month View</span>
 			<div class="ml-auto space-x-2.5">
 				<Dropdown
 					:options="VIEW_OPTIONS"
 					:button="{
 						label: 'View',
-						iconRight: 'chevron-down',
+						iconRight: 'lucide-chevron-down',
 						size: 'md',
 					}"
 				>
@@ -26,7 +26,7 @@
 					:button="{
 						label: 'Create',
 						variant: 'solid',
-						iconRight: 'chevron-down',
+						iconRight: 'lucide-chevron-down',
 						size: 'md',
 					}"
 				/>
@@ -48,8 +48,7 @@
 		<div v-else class="py-40 text-center">Please select a company.</div>
 	</div>
 	<ShiftAssignmentDialog
-		v-model="showShiftAssignmentDialog"
-		:isDialogOpen="showShiftAssignmentDialog"
+		v-model:open="showShiftAssignmentDialog"
 		:employees="employees.data"
 		@fetchEvents="
 			monthViewTable?.events.fetch();
@@ -60,7 +59,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from "vue";
-import { Dropdown, FeatherIcon, createListResource } from "frappe-ui";
+import { Dropdown, createListResource } from "frappe-ui";
 
 import { dayjs, goTo, raiseToast } from "../utils";
 import MonthViewTable from "../components/MonthViewTable.vue";

@@ -6,17 +6,12 @@
 			:image="employee?.image"
 			:size="props.size"
 		/>
-		<div class="text-base text-gray-800 grow">
+		<div class="text-base text-ink-gray-7 grow">
 			{{ employee?.employee_name || props.employeeID }}
 		</div>
 	</div>
 
-	<Avatar
-		v-else
-		:label="employee?.employee_name"
-		:image="employee?.image"
-		:size="props.size"
-	/>
+	<Avatar v-else :label="employee?.employee_name" :image="employee?.image" :size="props.size" />
 </template>
 
 <script setup>

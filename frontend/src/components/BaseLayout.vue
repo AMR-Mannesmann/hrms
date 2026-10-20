@@ -2,10 +2,10 @@
 	<ion-page>
 		<ion-header class="ion-no-border">
 			<div class="w-full sm:w-96">
-				<div class="flex flex-col bg-white shadow-sm p-4">
+				<div class="flex flex-col bg-surface-base shadow-sm p-4">
 					<div class="flex flex-row justify-between items-center">
 						<div class="flex flex-row items-center gap-2">
-							<h2 class="text-xl font-bold text-gray-900">
+							<h2 class="text-2xl-bold text-ink-gray-8">
 								{{ props.pageTitle || __("Frappe HR") }}
 							</h2>
 						</div>
@@ -16,23 +16,16 @@
 								class="flex flex-col items-center"
 							>
 								<span class="relative inline-block" @click="navigate">
-									<FeatherIcon name="bell" class="h-6 w-6" />
+									<Icon name="lucide-bell" class="h-6 w-6" />
 									<span
 										v-if="unreadNotificationsCount.data"
-										class="absolute top-0 right-0.5 inline-block w-2 h-2 bg-red-600 rounded-full border border-white"
+										class="absolute top-0 right-0.5 inline-block w-2 h-2 bg-surface-red-7 rounded-full border border-outline-gray-1"
 									>
 									</span>
 								</span>
 							</router-link>
-							<router-link
-								:to="{ name: 'Profile' }"
-								class="flex flex-col items-center"
-							>
-								<Avatar
-									:image="user.data.user_image"
-									:label="user.data.first_name"
-									size="xl"
-								/>
+							<router-link :to="{ name: 'Profile' }" class="flex flex-col items-center">
+								<Avatar :image="user.data.user_image" :label="user.data.first_name" size="xl" />
 							</router-link>
 						</div>
 					</div>
@@ -50,7 +43,7 @@
 
 <script setup>
 import { IonHeader, IonContent, IonPage } from "@ionic/vue"
-import { FeatherIcon, Avatar } from "frappe-ui"
+import { Icon, Avatar } from "frappe-ui"
 
 import { unreadNotificationsCount } from "@/data/notifications"
 

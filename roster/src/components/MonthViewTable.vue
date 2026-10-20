@@ -1,18 +1,17 @@
 <template>
 	<div
-		class="rounded-lg border overflow-auto max-h-[45rem]"
+		class="rounded-6 border overflow-auto max-h-[45rem]"
 		:class="loading && 'animate-pulse pointer-events-none'"
 	>
 		<table class="border-separate border-spacing-0">
 			<thead>
-				<tr class="sticky top-0 bg-white z-10">
+				<tr class="sticky top-0 bg-surface-base z-10">
 					<!-- Employee Search -->
 					<th class="p-2 border-b">
-						<Autocomplete
+						<MultiSelect
 							:options="employeeSearchOptions"
 							v-model="employeeSearch"
 							placeholder="Search Employee"
-							:multiple="true"
 						/>
 					</th>
 
@@ -31,10 +30,7 @@
 				<tr v-for="(employee, rowIdx) in employees" :key="employee.name">
 					<!-- Employee Column -->
 					<td
-						v-if="
-							!employeeSearch?.length ||
-							employeeSearch?.some((item) => item.value === employee?.name)
-						"
+						v-if="!employeeSearch?.length || employeeSearch.includes(employee.name)"
 						class="px-2 py-7 z-[5]"
 						:class="{ 'border-t': rowIdx }"
 					>
@@ -45,10 +41,10 @@
 								size="2xl"
 							/>
 							<div class="flex flex-col ml-2 my-0.5 truncate">
-								<div class="truncate text-base font-medium">
+								<div class="truncate text-base-medium">
 									{{ employee.employee_name }}
 								</div>
-								<div class="mt-auto text-xs text-gray-500 truncate">
+								<div class="mt-auto text-xs text-ink-gray-5 truncate">
 									{{ employee.designation }}
 								</div>
 							</div>
@@ -57,10 +53,7 @@
 
 					<!-- Events -->
 					<td
-						v-if="
-							!employeeSearch?.length ||
-							employeeSearch?.some((item) => item.value === employee?.name)
-						"
+						v-if="!employeeSearch?.length || employeeSearch.includes(employee.name)"
 						v-for="(day, colIdx) in daysOfMonth"
 						:key="colIdx"
 						class="p-1.5"
@@ -68,11 +61,11 @@
 							'border-l': colIdx,
 							'border-t': rowIdx,
 							'align-top': events.data?.[employee.name]?.[day.date],
-							'align-middle bg-blue-50':
+							'align-middle bg-surface-blue-1':
 								events.data?.[employee.name]?.[day.date]?.holiday,
-							'align-middle bg-pink-50':
+							'align-middle bg-surface-pink-1':
 								events.data?.[employee.name]?.[day.date]?.leave,
-							'bg-gray-50':
+							'bg-surface-gray-1':
 								dropCell.employee === employee.name &&
 								dropCell.date === day.date &&
 								!hasSameShift(employee.name, day.date),
@@ -90,14 +83,7 @@
 							dropCell.employee = employee.name;
 							dropCell.date = day.date;
 						"
-						@drop="
-							() => {
-								if (!hasSameShift(employee.name, day.date)) {
-									loading = true;
-									swapShift.submit();
-								}
-							}
-						"
+						@drop="dropShift(employee.name, day.date)"
 					>
 						<div class="flex flex-col space-y-1.5 translate-x-0 translate-y-0">
 							<!-- Holiday -->
@@ -127,32 +113,16 @@
 							<div
 								v-for="shift in events.data?.[employee.name]?.[day.date]?.shift ||
 								[]"
-								@mouseenter="
-									hoveredCell.shift = shift.name;
-									hoveredCell.shift_type = shift.shift_type;
-									hoveredCell.shift_location = shift.shift_location;
-									hoveredCell.shift_status = shift.status;
-								"
-								@mouseleave="
-									hoveredCell.shift = '';
-									hoveredCell.shift_type = '';
-									hoveredCell.shift_location = '';
-									hoveredCell.shift_status = '';
-								"
+								@mouseenter="hoveredCell.shift = shift.name"
+								@mouseleave="hoveredCell.shift = ''"
 								@dragenter="dropCell.shift = shift.name"
 								@dragleave="dropCell.shift = ''"
 								:draggable="true"
 								@dragstart="
-									(event) => {
-										if (event.dataTransfer) {
-											event.dataTransfer.effectAllowed = 'move';
-										}
-									}
+									(event) => startDragging(event, shift, employee.name, day.date)
 								"
-								@dragend="
-									if (!loading) dropCell = { employee: '', date: '', shift: '' };
-								"
-								class="rounded border-2 p-2 cursor-pointer"
+								@dragend="stopDragging"
+								class="rounded-4 border-2 p-2 cursor-pointer"
 								:class="[
 									shift.status === 'Inactive' && 'border-dashed',
 									dropCell.employee === employee.name &&
@@ -160,9 +130,9 @@
 										dropCell.shift === shift.name &&
 										!hasSameShift(employee.name, day.date) &&
 										'scale-105',
-									hoveredCell.employee === employee.name &&
-										hoveredCell.date === day.date &&
-										hoveredCell.shift === shift.name &&
+									dragSource?.employee === employee.name &&
+										dragSource?.date === day.date &&
+										dragSource?.name === shift.name &&
 										dropCell.employee &&
 										'opacity-0',
 								]"
@@ -175,29 +145,23 @@
 									backgroundColor:
 										shift.status === 'Active'
 											? colors[shift.color as Color][50]
-											: 'white',
+											: 'var(--surface-base)',
 								}"
 								@click="
 									shiftAssignment = shift.name;
 									showShiftAssignmentDialog = true;
 								"
 							>
-								<div
-									class="truncate mb-1.5 pointer-events-none text-base font-medium"
-								>
+								<div class="truncate mb-1.5 pointer-events-none text-base-medium">
 									{{ shift["shift_type"] }}
 								</div>
-								<div class="text-xs text-gray-500 pointer-events-none space-y-1.5">
+								<div
+									class="text-xs text-ink-gray-5 pointer-events-none space-y-1.5"
+								>
 									<div class="flex items-center space-x-1">
-										<FeatherIcon
-											name="clock"
-											class="stroke-gray-400"
-											style="
-												 {
-													height: 0.82rem;
-													width: 0.82rem;
-												}
-											"
+										<span
+											class="lucide-clock text-ink-gray-4 size-3.5"
+											aria-hidden="true"
 										/>
 										<span>
 											{{ shift["start_time"] }} - {{ shift["end_time"] }}
@@ -207,15 +171,9 @@
 										v-if="shift['shift_location']"
 										class="flex items-center space-x-1"
 									>
-										<FeatherIcon
-											name="map-pin"
-											class="stroke-gray-400"
-											style="
-												 {
-													height: 0.82rem;
-													width: 0.82rem;
-												}
-											"
+										<span
+											class="lucide-map-pin text-ink-gray-4 size-3.5"
+											aria-hidden="true"
 										/>
 										<span>{{ shift["shift_location"] }}</span>
 									</div>
@@ -225,8 +183,9 @@
 							<!-- Add Shift -->
 							<Button
 								variant="outline"
-								icon="plus"
-								class="border-2 active:bg-white w-full"
+								icon="lucide-plus"
+								aria-label="Add shift"
+								class="border-2 active:bg-surface-base w-full"
 								:class="
 									hoveredCell.employee === employee.name &&
 									hoveredCell.date === day.date &&
@@ -247,8 +206,7 @@
 	</div>
 
 	<ShiftAssignmentDialog
-		v-model="showShiftAssignmentDialog"
-		:isDialogOpen="showShiftAssignmentDialog"
+		v-model:open="showShiftAssignmentDialog"
 		:shiftAssignmentName="shiftAssignment"
 		:selectedCell="{ employee: hoveredCell.employee, date: hoveredCell.date }"
 		:employees="employees"
@@ -262,7 +220,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from "vue";
 import colors from "tailwindcss/colors";
-import { Avatar, Autocomplete, FeatherIcon, createResource } from "frappe-ui";
+import { Avatar, MultiSelect, createResource } from "frappe-ui";
 import { Dayjs } from "dayjs";
 
 import { dayjs, raiseToast } from "../utils";
@@ -330,18 +288,36 @@ const props = defineProps<{
 }>();
 
 const loading = ref(true);
-const employeeSearch = ref<{ value: string; label: string }[]>();
+const employeeSearch = ref<string[]>([]);
 const shiftAssignment = ref<string>();
 const showShiftAssignmentDialog = ref(false);
 const hoveredCell = ref({
 	employee: "",
 	date: "",
 	shift: "",
-	shift_type: "",
-	shift_location: "",
-	shift_status: "",
 });
 const dropCell = ref({ employee: "", date: "", shift: "" });
+const dragSource = ref<(Shift & { employee: string; date: string }) | null>(null);
+
+function startDragging(event: DragEvent, shift: Shift, employee: string, date: string) {
+	dragSource.value = { ...shift, employee, date };
+	if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+}
+
+function stopDragging() {
+	if (loading.value) return;
+	dropCell.value = { employee: "", date: "", shift: "" };
+	dragSource.value = null;
+}
+
+function dropShift(employee: string, date: string) {
+	if (!dragSource.value || hasSameShift(employee, date)) return;
+	dropCell.value.employee = employee;
+	dropCell.value.date = date;
+	loading.value = true;
+	// The resource's onError callback displays the failure and clears loading.
+	swapShift.submit().catch(() => {});
+}
 
 const daysOfMonth = computed(() => {
 	const daysOfMonth = [];
@@ -372,16 +348,16 @@ watch(
 );
 
 watch(loading, (val) => {
-	if (!val) dropCell.value = { employee: "", date: "", shift: "" };
+	if (!val) stopDragging();
 });
 
 const hasSameShift = (employee: string, day: string) =>
 	Array.isArray(events.data?.[employee]?.[day]?.shift) &&
 	events.data?.[employee]?.[day].shift.some(
 		(shift: Shift) =>
-			shift.shift_type === hoveredCell.value.shift_type &&
-			shift.shift_location === hoveredCell.value.shift_location &&
-			shift.status === hoveredCell.value.shift_status,
+			shift.shift_type === dragSource.value?.shift_type &&
+			shift.shift_location === dragSource.value?.shift_location &&
+			shift.status === dragSource.value?.status,
 	);
 
 // RESOURCES
@@ -417,8 +393,8 @@ const swapShift = createResource({
 	url: "hrms.api.roster.swap_shift",
 	makeParams() {
 		return {
-			src_shift: hoveredCell.value.shift,
-			src_date: hoveredCell.value.date,
+			src_shift: dragSource.value?.name,
+			src_date: dragSource.value?.date,
 			tgt_employee: dropCell.value.employee,
 			tgt_date: dropCell.value.date,
 			tgt_shift: dropCell.value.shift,
@@ -520,10 +496,10 @@ td {
 
 th:first-child,
 td:first-child {
-	@apply sticky left-0 max-w-64 min-w-64 bg-white border-r;
+	@apply sticky left-0 max-w-64 min-w-64 bg-surface-base border-r;
 }
 
 .blocked-cell {
-	@apply text-sm text-gray-500 text-center p-2;
+	@apply text-sm text-ink-gray-5 text-center p-2;
 }
 </style>

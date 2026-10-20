@@ -1,12 +1,14 @@
 <template>
-	<div class="flex flex-col bg-white rounded w-full py-6 px-4 border-none">
-		<h2 class="text-lg font-bold text-gray-900">
+	<div class="flex flex-col bg-surface-base rounded-4 w-full py-6 px-4 border-none">
+		<h2 class="text-lg-bold text-ink-gray-8">
 			{{ __("Hey, {0} 👋", [employee?.data?.first_name]) }}
 		</h2>
 
 		<template v-if="settings.data?.allow_employee_checkin_from_mobile_app">
-			<div class="font-medium text-sm text-gray-500 mt-1.5" v-if="lastLog?.time">
-				<span>{{ __("Last {0} was at {1}", [__(lastLogType), formatTimestamp(lastLog.time)]) }}</span>
+			<div class="text-sm-medium text-ink-gray-4 mt-1.5" v-if="lastLog?.time">
+				<span>{{
+					__("Last {0} was at {1}", [__(lastLogType), formatTimestamp(lastLog.time)])
+				}}</span>
 				<span class="whitespace-pre"> &middot; </span>
 				<router-link :to="{ name: 'EmployeeCheckinListView' }" v-slot="{ navigate }">
 					<span @click="navigate" class="underline">{{ __("View List") }}</span>
@@ -19,8 +21,10 @@
 				@click="handleEmployeeCheckin"
 			>
 				<template #prefix>
-					<FeatherIcon
-						:name="nextAction.action === 'IN' ? 'arrow-right-circle' : 'arrow-left-circle'"
+					<Icon
+						:name="
+							nextAction.action === 'IN' ? 'lucide-arrow-right-circle' : 'lucide-arrow-left-circle'
+						"
 						class="w-4"
 					/>
 				</template>
@@ -28,7 +32,7 @@
 			</Button>
 		</template>
 
-		<div v-else class="font-medium text-sm text-gray-500 mt-1.5">
+		<div v-else class="text-sm-medium text-ink-gray-4 mt-1.5">
 			{{ dayjs().format("ddd, D MMMM, YYYY") }}
 		</div>
 	</div>
@@ -42,20 +46,20 @@
 	>
 		<div class="h-120 w-full flex flex-col items-center justify-center gap-5 p-4 mb-5">
 			<div class="flex flex-col gap-1.5 mt-2 items-center justify-center">
-				<div class="font-bold text-xl">
+				<div class="text-2xl-bold">
 					{{ dayjs(checkinTimestamp).format("hh:mm:ss a") }}
 				</div>
-				<div class="font-medium text-gray-500 text-sm">
+				<div class="text-ink-gray-4 text-sm-medium">
 					{{ dayjs().format("D MMM, YYYY") }}
 				</div>
 			</div>
 
 			<template v-if="settings.data?.allow_geolocation_tracking">
-				<span v-if="locationStatus" class="font-medium text-gray-500 text-sm">
+				<span v-if="locationStatus" class="text-ink-gray-4 text-sm-medium">
 					{{ locationStatus }}
 				</span>
 
-				<div class="rounded border-4 translate-z-0 block overflow-hidden w-full h-170">
+				<div class="rounded-4 border-4 translate-z-0 block overflow-hidden w-full h-170">
 					<iframe
 						width="100%"
 						height="170"
@@ -70,7 +74,12 @@
 				</div>
 			</template>
 
-			<Button :loading="checkins.insert.loading" variant="solid" class="w-full py-5 text-sm disabled:bg-gray-700" @click="submitLog(nextAction.action)">
+			<Button
+				:loading="checkins.insert.loading"
+				variant="solid"
+				class="w-full py-5 text-sm disabled:bg-surface-gray-8"
+				@click="submitLog(nextAction.action)"
+			>
 				{{ __("Confirm {0}", [nextAction.label]) }}
 			</Button>
 		</div>
@@ -78,7 +87,7 @@
 </template>
 
 <script setup>
-import { createListResource, toast, FeatherIcon } from "frappe-ui"
+import { createListResource, toast, Icon } from "frappe-ui"
 import { computed, inject, ref, onMounted, onBeforeUnmount } from "vue"
 import { IonModal, modalController } from "@ionic/vue"
 
@@ -167,35 +176,23 @@ const submitLog = (logType) => {
 		{
 			onSuccess(data) {
 				if (!data?.name) {
-					toast({
-						title: __("Error"),
-						text: __("{0} failed!", [actionLabel]),
-						icon: "alert-circle",
-						position: "bottom-center",
-						iconClasses: "text-red-500",
+					toast.error(__("Error"), {
+						description: __("{0} failed!", [actionLabel]),
 					})
 					return
 				}
 
 				modalController.dismiss()
-				toast({
-					title: __("Success"),
-					text: __("{0} successful!", [actionLabel]),
-					icon: "check-circle",
-					position: "bottom-center",
-					iconClasses: "text-green-500",
+				toast.success(__("Success"), {
+					description: __("{0} successful!", [actionLabel]),
 				})
 			},
 			onError(error) {
 				let messages = error.messages?.length ? error.messages : [__("{0} failed!", [actionLabel])]
 
 				for (const message of messages) {
-					toast({
-						title: __("Error"),
-						text: message || __("{0} failed!", [actionLabel]),
-						icon: "alert-circle",
-						position: "bottom-center",
-						iconClasses: "text-red-500",
+					toast.error(__("Error"), {
+						description: message || __("{0} failed!", [actionLabel]),
 					})
 				}
 			},

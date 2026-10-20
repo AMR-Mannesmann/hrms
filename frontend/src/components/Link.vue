@@ -1,18 +1,33 @@
 <template>
-	<Autocomplete
-		ref="autocompleteRef"
+	<Combobox
 		size="sm"
 		v-model="value"
 		:placeholder="__('Select {0}', [__(doctype)])"
 		:options="options.data || []"
+		:filterable="false"
+		:loading="options.loading"
 		:class="disabled ? 'pointer-events-none' : ''"
 		:disabled="disabled"
-		@update:query="handleQueryUpdate"
-	/>
+		@input="handleQueryUpdate($event.target.value)"
+	>
+		<template #suffix="{ clear }">
+			<button
+				v-if="modelValue && !disabled"
+				type="button"
+				:aria-label="__('Clear {0}', [__(doctype)])"
+				class="flex items-center text-ink-gray-5"
+				@pointerdown.stop
+				@click.stop="clear"
+			>
+				<Icon name="lucide-x" class="h-4 w-4" />
+			</button>
+			<Icon v-else name="lucide-chevron-down" class="h-4 w-4" />
+		</template>
+	</Combobox>
 </template>
 
 <script setup>
-import { createResource, Autocomplete, debounce } from "frappe-ui"
+import { createResource, Combobox, debounce, Icon } from "frappe-ui"
 import { ref, computed, watch } from "vue"
 
 const props = defineProps({
@@ -27,7 +42,7 @@ const props = defineProps({
 	},
 	filters: {
 		type: Object,
-		default: {},
+		default: () => ({}),
 	},
 	disabled: {
 		type: Boolean,
@@ -37,18 +52,11 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue"])
 
-const autocompleteRef = ref(null)
 const searchText = ref("")
 
 const value = computed({
 	get: () => props.modelValue,
-	set: (val) => {
-		if (typeof val === "string") {
-			emit("update:modelValue", val)
-		} else {
-			emit("update:modelValue", val?.value || "")
-		}
-	},
+	set: (val) => emit("update:modelValue", val ?? ""),
 })
 
 const options = createResource({
@@ -62,7 +70,7 @@ const options = createResource({
 	transform: (data) => {
 		const mapped = data.map((doc) => {
 			let title = null
-			if (doc.label && doc.label !== doc.value){
+			if (doc.label && doc.label !== doc.value) {
 				title = doc.label
 			} else if (doc.description) {
 				title = doc.description.split(",")[0]
@@ -109,7 +117,8 @@ watch(
 
 watch(
 	() => props.filters,
-	() => reloadOptions(''),
+	() => reloadOptions(""),
+	{ deep: true }
 )
 
 watch(

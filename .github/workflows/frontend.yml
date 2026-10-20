@@ -1,0 +1,41 @@
+name: Frontend
+
+on:
+  push:
+    paths:
+      - "frontend/**"
+      - "roster/**"
+      - ".github/workflows/frontend.yml"
+  pull_request:
+    paths:
+      - "frontend/**"
+      - "roster/**"
+      - ".github/workflows/frontend.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        client: [frontend, roster]
+    defaults:
+      run:
+        working-directory: ${{ matrix.client }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: yarn
+          cache-dependency-path: ${{ matrix.client }}/yarn.lock
+      - run: yarn install --frozen-lockfile
+      - name: Install dependencies for cross-client tests
+        if: matrix.client == 'frontend'
+        run: yarn --cwd ../roster install --frozen-lockfile
+      - name: Test document fields and boot data
+        if: matrix.client == 'frontend'
+        run: yarn test
+      - name: Check roster TypeScript
+        if: matrix.client == 'roster'
+        run: yarn typecheck
+      - run: yarn build

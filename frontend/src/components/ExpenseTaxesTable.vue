@@ -1,16 +1,16 @@
 <template>
 	<template v-if="expenseClaim.expenses">
 		<div class="flex flex-row justify-between items-center pt-4">
-			<h2 class="text-base font-semibold text-gray-800">{{ __("Taxes & Charges") }} </h2>
+			<h2 class="text-base-semibold text-ink-gray-7">{{ __("Taxes & Charges") }}</h2>
 			<div class="flex flex-row gap-3 items-center">
-				<span class="text-base font-semibold text-gray-800">
+				<span class="text-base-semibold text-ink-gray-7">
 					{{ formatCurrency(expenseClaim.total_taxes_and_charges, expenseClaim.currency) }}
 				</span>
 				<Button
 					v-if="!isReadOnly"
 					id="add-taxes-modal"
 					class="text-sm"
-					icon="plus"
+					icon="lucide-plus"
 					variant="subtle"
 					@click="openModal()"
 				/>
@@ -19,7 +19,7 @@
 
 		<div
 			v-if="expenseClaim.taxes?.length"
-			class="flex flex-col bg-white mt-5 rounded border overflow-auto"
+			class="flex flex-col bg-surface-base mt-5 rounded-4 border overflow-auto"
 		>
 			<div
 				class="flex flex-row p-3.5 items-center justify-between border-b cursor-pointer"
@@ -31,10 +31,10 @@
 					<div class="flex flex-row items-center justify-between">
 						<div class="flex flex-row items-start gap-3 grow">
 							<div class="flex flex-col items-start gap-1.5">
-								<div class="text-base font-normal text-gray-800">
+								<div class="text-base font-normal text-ink-gray-7">
 									{{ item.account_head }}
 								</div>
-								<div class="text-xs font-normal text-gray-500">
+								<div class="text-xs font-normal text-ink-gray-4">
 									<span> Rate: {{ formatCurrency(item.rate, expenseClaim.currency) }} </span>
 									<span class="whitespace-pre"> &middot; </span>
 									<span class="whitespace-nowrap">
@@ -44,10 +44,10 @@
 							</div>
 						</div>
 						<div class="flex flex-row justify-end items-center gap-2">
-							<span class="text-gray-700 font-normal rounded text-base">
+							<span class="text-ink-gray-6 rounded-4 text-base font-normal">
 								{{ formatCurrency(item.total, expenseClaim.currency) }}
 							</span>
-							<FeatherIcon name="chevron-right" class="h-5 w-5 text-gray-500" />
+							<Icon name="lucide-chevron-right" class="h-5 w-5 text-ink-gray-4" />
 						</div>
 					</div>
 				</div>
@@ -58,17 +58,13 @@
 		<CustomIonModal :isOpen="isModalOpen" @didDismiss="resetSelectedItem()">
 			<template #actionSheet>
 				<!-- Add Expense Tax Action Sheet -->
-				<div
-					class="bg-white w-full flex flex-col items-center justify-center pb-5"
-				>
+				<div class="bg-surface-base w-full flex flex-col items-center justify-center pb-5">
 					<div class="w-full pt-8 pb-5 border-b text-center">
-						<span class="text-gray-900 font-bold text-xl">
+						<span class="text-ink-gray-8 text-2xl-bold">
 							{{ modalTitle }}
 						</span>
 					</div>
-					<div
-						class="w-full flex flex-col items-center justify-center gap-5 p-4"
-					>
+					<div class="w-full flex flex-col items-center justify-center gap-5 p-4">
 						<div class="flex flex-col w-full space-y-4">
 							<FormField
 								v-for="field in taxesTableFields.data"
@@ -93,27 +89,24 @@
 						>
 							<Button
 								v-if="editingIdx !== null"
-								class="border-red-600 text-red-600 py-5 text-sm"
+								class="border-outline-red-6 text-ink-red-6 py-5 text-sm"
 								variant="outline"
 								theme="red"
 								@click="deleteExpenseTax()"
 							>
 								<template #prefix>
-									<FeatherIcon name="trash" class="w-4" />
+									<Icon name="lucide-trash" class="w-4" />
 								</template>
 								{{ __("Delete") }}
 							</Button>
 							<Button
 								variant="solid"
-								class="w-full py-5 text-sm disabled:bg-gray-700 disabled:text-white"
+								class="min-w-0 flex-1 py-5 text-sm disabled:bg-surface-gray-8 disabled:text-ink-base"
 								@click="updateExpenseTax()"
 								:disabled="addButtonDisabled"
 							>
 								<template #prefix>
-									<FeatherIcon
-										:name="editingIdx === null ? 'plus' : 'check'"
-										class="w-4"
-									/>
+									<Icon :name="editingIdx === null ? 'lucide-plus' : 'lucide-check'" class="w-4" />
 								</template>
 								{{ editingIdx === null ? __("Add Tax") : __("Update Tax") }}
 							</Button>
@@ -126,7 +119,7 @@
 </template>
 
 <script setup>
-import { FeatherIcon, createResource } from "frappe-ui"
+import { Icon, createResource } from "frappe-ui"
 import { computed, ref, watch, inject } from "vue"
 
 import FormField from "@/components/FormField.vue"
@@ -146,11 +139,7 @@ const props = defineProps({
 		default: false,
 	},
 })
-const emit = defineEmits([
-	"add-expense-tax",
-	"update-expense-tax",
-	"delete-expense-tax",
-])
+const emit = defineEmits(["add-expense-tax", "update-expense-tax", "delete-expense-tax"])
 const __ = inject("$translate")
 const expenseTax = ref({})
 const editingIdx = ref(null)
@@ -196,12 +185,7 @@ const taxesTableFields = createResource({
 						company: props.expenseClaim.company,
 						account_type: [
 							"in",
-							[
-								"Tax",
-								"Chargeable",
-								"Income Account",
-								"Expenses Included In Valuation",
-							],
+							["Tax", "Chargeable", "Income Account", "Expenses Included In Valuation"],
 						],
 					}
 				}
@@ -213,11 +197,7 @@ const taxesTableFields = createResource({
 taxesTableFields.reload()
 
 const expenseClaimRef = computed(() => props.expenseClaim)
-useCurrencyConversion(
-	taxesTableFields,
-	expenseClaimRef,
-	["tax_amount", "total"]
-)
+useCurrencyConversion(taxesTableFields, expenseClaimRef, ["tax_amount", "total"])
 
 const modalTitle = computed(() => {
 	if (props.isReadOnly) return __("Expense Tax")
@@ -248,8 +228,7 @@ watch(
 		if (editingIdx.value && newVal && !oldVal) return
 
 		expenseTax.value.tax_amount =
-			parseFloat(props.expenseClaim.total_sanctioned_amount) *
-			(parseFloat(newVal) / 100)
+			parseFloat(props.expenseClaim.total_sanctioned_amount) * (parseFloat(newVal) / 100)
 		calculateTotalTax()
 	}
 )

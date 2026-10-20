@@ -1,28 +1,25 @@
 <template>
 	<ion-page>
 		<ion-content class="ion-padding">
-			<div
-				v-if="resetPassword.showDialog"
-				class="flex h-screen w-screen flex-col bg-white"
-			>
+			<div v-if="resetPassword.showDialog" class="flex h-screen w-screen flex-col bg-surface-base">
 				<header class="flex items-center justify-between px-6 py-4">
-					<div class="text-lg font-semibold text-gray-900">
+					<div class="text-lg-semibold text-ink-gray-8">
 						{{ __("Reset Password") }}
 					</div>
 					<button
 						type="button"
-						class="text-sm text-gray-600 hover:text-gray-900 underline"
+						class="text-sm text-ink-gray-5 hover:text-ink-gray-8 underline"
 						@click="resetPassword.showDialog = false"
 					>
 						{{ __("Back to Login") }}
 					</button>
 				</header>
 				<div class="flex flex-1 flex-col items-center justify-center px-8 text-center">
-					<p class="text-gray-700">
+					<p class="text-ink-gray-6">
 						{{ __("Your password has expired. Please reset your password to continue") }}
 					</p>
 					<a
-						class="mt-6 inline-flex items-center justify-center gap-2 transition-colors focus:outline-none text-white bg-gray-900 hover:bg-gray-800 active:bg-gray-700 focus-visible:ring focus-visible:ring-gray-400 h-9 text-base px-4 rounded"
+						class="mt-6 inline-flex items-center justify-center gap-2 transition-colors focus:outline-none text-ink-base bg-surface-gray-10 hover:bg-surface-gray-9 active:bg-surface-gray-8 focus-visible:ring focus-visible:ring-outline-gray-4 h-9 text-base px-4 rounded-4"
 						:href="resetPassword.link"
 						target="_blank"
 					>
@@ -31,24 +28,28 @@
 				</div>
 			</div>
 
-			<div v-else class="flex h-screen w-screen flex-col justify-center bg-white">
+			<div v-else class="flex h-screen w-screen flex-col justify-center bg-surface-base">
 				<div class="flex flex-col mx-auto gap-3 items-center">
 					<FrappeHRLogo class="h-8 w-8" />
-					<div class="text-3xl font-semibold text-gray-900 text-center">
+					<div class="text-4xl-semibold text-ink-gray-8 text-center">
 						{{ __("Login to Frappe HR") }}
 					</div>
 				</div>
 
 				<div class="mx-auto mt-10 w-full px-8 sm:w-96">
-					<form v-if="!user_pass_login_disabled.data" class="flex flex-col space-y-4" @submit.prevent="submit">
-						<Input
+					<form
+						v-if="!user_pass_login_disabled.data"
+						class="flex flex-col space-y-4"
+						@submit.prevent="submit"
+					>
+						<TextInput
 							:label="__('Email')"
 							:placeholder="__('johndoe@mail.com')"
 							v-model="email"
 							type="text"
 							autocomplete="username"
 						/>
-						<Input
+						<TextInput
 							:label="__('Password')"
 							type="password"
 							placeholder="••••••"
@@ -57,16 +58,17 @@
 						/>
 						<ErrorMessage :message="errorMessage" />
 						<Button
-							:loading="session.login.loading"
+							type="submit"
+							:loading="isSubmitting"
 							variant="solid"
-							class="disabled:bg-gray-700 disabled:text-white !mt-6"
+							class="disabled:bg-surface-gray-8 disabled:text-ink-base !mt-6"
 						>
 							{{ __("Login") }}
 						</Button>
 						<div class="text-center mt-4">
 							<router-link
 								:to="{ name: 'ForgotPassword', query: email ? { email } : {} }"
-								class="text-sm text-gray-600 hover:text-gray-900 underline"
+								class="text-sm text-ink-gray-5 hover:text-ink-gray-8 underline"
 							>
 								{{ __("Forgot Password?") }}
 							</router-link>
@@ -74,12 +76,17 @@
 					</form>
 
 					<template v-if="authProviders.data?.length">
-						<div v-if="!user_pass_login_disabled.data" class="text-center text-sm text-gray-600 my-4">or</div>
+						<div
+							v-if="!user_pass_login_disabled.data"
+							class="text-center text-sm text-ink-gray-5 my-4"
+						>
+							or
+						</div>
 						<div class="space-y-4">
 							<a
 								v-for="provider in authProviders.data"
 								:key="provider.name"
-								class="flex items-center justify-center gap-2 transition-colors focus:outline-none text-gray-800 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 focus-visible:ring focus-visible:ring-gray-400 h-7 text-base p-2 rounded"
+								class="flex items-center justify-center gap-2 transition-colors focus:outline-none text-ink-gray-7 bg-surface-gray-2 hover:bg-surface-gray-3 active:bg-surface-gray-4 focus-visible:ring focus-visible:ring-outline-gray-4 h-7 text-base p-2 rounded-4"
 								:href="provider.auth_url"
 							>
 								<img class="h-4 w-4" :src="provider.icon" :alt="provider.provider_name" />
@@ -88,20 +95,22 @@
 						</div>
 					</template>
 
-					<div v-else-if="user_pass_login_disabled.data" class="text-center text-gray-600 py-8">{{ __("No login methods are available. Please contact your administrator.") }}</div>
+					<div v-else-if="user_pass_login_disabled.data" class="text-center text-ink-gray-5 py-8">
+						{{ __("No login methods are available. Please contact your administrator.") }}
+					</div>
 				</div>
 			</div>
-			<Dialog v-model="otp.showDialog">
-				<template #body-title>
-					<h2 class="text-lg font-bold">{{ __("OTP Verification") }}</h2>
+			<Dialog v-model:open="otp.showDialog">
+				<template #title>
+					<h2 class="text-lg-bold">{{ __("OTP Verification") }}</h2>
 				</template>
-				<template #body-content>
+				<template #default>
 					<p class="mb-4" v-if="otp.verification.prompt">
 						{{ otp.verification.prompt }}
 					</p>
 
 					<form class="flex flex-col space-y-4" @submit.prevent="submit">
-						<Input
+						<TextInput
 							:label="__('OTP Code')"
 							type="text"
 							placeholder="000000"
@@ -110,9 +119,10 @@
 						/>
 						<ErrorMessage :message="errorMessage" />
 						<Button
-							:loading="session.otp.loading"
+							type="submit"
+							:loading="isSubmitting"
 							variant="solid"
-							class="disabled:bg-gray-700 disabled:text-white !mt-6"
+							class="disabled:bg-surface-gray-8 disabled:text-ink-base !mt-6"
 						>
 							{{ __("Verify") }}
 						</Button>
@@ -126,13 +136,14 @@
 <script setup>
 import { IonPage, IonContent } from "@ionic/vue"
 import { inject, reactive, ref } from "vue"
-import { Input, Button, ErrorMessage, Dialog, createResource } from "frappe-ui"
+import { TextInput, Button, ErrorMessage, Dialog, createResource } from "frappe-ui"
 
 import FrappeHRLogo from "@/components/icons/FrappeHRLogo.vue"
 
 const email = ref(null)
 const password = ref(null)
 const errorMessage = ref("")
+const isSubmitting = ref(false)
 
 const resetPassword = reactive({
 	showDialog: false,
@@ -148,7 +159,10 @@ const otp = reactive({
 const session = inject("$session")
 const __ = inject("$translate")
 
-async function submit(e) {
+async function submit() {
+	if (isSubmitting.value) return
+	isSubmitting.value = true
+	errorMessage.value = ""
 	try {
 		let response
 		if (otp.showDialog) {
@@ -177,13 +191,15 @@ async function submit(e) {
 			}
 		}
 	} catch (error) {
-		errorMessage.value = error.messages.join("\n")
+		errorMessage.value = error.messages?.join("\n") || error.message
+	} finally {
+		isSubmitting.value = false
 	}
 }
 
 const user_pass_login_disabled = createResource({
 	url: "hrms.api.system_settings.get_user_pass_login_disabled",
-	method: 'GET',
+	method: "GET",
 	initialData: 1,
 	auto: true,
 })

@@ -1,11 +1,14 @@
 <template>
 	<ion-page>
 		<ion-content class="ion-padding">
-			<div class="flex h-screen w-screen flex-col justify-center bg-white">
+			<div class="flex h-screen w-screen flex-col justify-center bg-surface-base">
 				<Dialog
-					:options="{
+					v-bind="{
 						title: __('Login Failed'),
-						message: __('No active employee found associated with the email ID {0}. Try logging in with your employee email ID or contact your HR manager for access.', [session?.user]),
+						message: __(
+							'No active employee found associated with the email ID {0}. Try logging in with your employee email ID or contact your HR manager for access.',
+							[session?.user]
+						),
 						size: 'lg',
 						actions: [
 							{
@@ -15,7 +18,7 @@
 							},
 						],
 					}"
-					v-model="showDialog"
+					v-model:open="showDialog"
 					@close="
 						() => {
 							session.logout.submit()

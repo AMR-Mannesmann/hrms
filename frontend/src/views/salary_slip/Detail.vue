@@ -31,7 +31,7 @@
 				<template #formButton>
 					<ErrorMessage :message="downloadError" class="mt-2" />
 					<Button
-						class="w-full rounded py-5 text-base disabled:bg-gray-700 disabled:text-white"
+						class="w-full rounded-4 py-5 text-base disabled:bg-surface-gray-8 disabled:text-ink-base"
 						@click="downloadPDF"
 						variant="solid"
 						:loading="loading"
@@ -136,7 +136,7 @@ function downloadPDF() {
 	fetch("/api/method/hrms.api._download_pdf", {
 		method: "POST",
 		headers,
-		body: new URLSearchParams({doctype: "Salary Slip" ,docname: salarySlipName }),
+		body: new URLSearchParams({ doctype: "Salary Slip", docname: salarySlipName }),
 		responseType: "blob",
 	})
 		.then((response) => {

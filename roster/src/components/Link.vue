@@ -1,22 +1,38 @@
 <template>
 	<div>
-		<span class="block text-xs leading-5 text-gray-600">
+		<span class="block text-xs leading-5 text-ink-gray-6">
 			{{ props.label }}
 		</span>
-		<Autocomplete
-			ref="autocompleteRef"
+		<Combobox
 			size="sm"
+			:aria-label="label || doctype"
 			v-model="value"
 			:options="options.data || []"
+			:filterable="false"
+			:loading="options.loading"
 			:class="disabled ? 'pointer-events-none' : ''"
 			:disabled="disabled"
-			@update:query="handleQueryUpdate"
-		/>
+			@input="(event) => handleQueryUpdate(event.target.value)"
+		>
+			<template #suffix="{ clear }">
+				<button
+					v-if="modelValue && !disabled"
+					type="button"
+					:aria-label="`Clear ${label || doctype}`"
+					class="flex items-center text-ink-gray-5"
+					@pointerdown.stop
+					@click.stop="clear"
+				>
+					<span class="lucide-x size-4" aria-hidden="true" />
+				</button>
+				<span v-else class="lucide-chevron-down size-4" aria-hidden="true" />
+			</template>
+		</Combobox>
 	</div>
 </template>
 
 <script setup>
-import { createResource, Autocomplete, debounce } from "frappe-ui";
+import { createResource, Combobox, debounce } from "frappe-ui";
 import { ref, computed, watch, onMounted } from "vue";
 
 const props = defineProps({
@@ -31,7 +47,7 @@ const props = defineProps({
 	},
 	filters: {
 		type: Object,
-		default: {},
+		default: () => ({}),
 	},
 	disabled: {
 		type: Boolean,
@@ -45,18 +61,11 @@ const props = defineProps({
 
 const emit = defineEmits(["update:modelValue"]);
 
-const autocompleteRef = ref(null);
 const searchText = ref("");
 
 const value = computed({
 	get: () => props.modelValue,
-	set: (val) => {
-		if (typeof val === "string") {
-			emit("update:modelValue", val);
-		} else {
-			emit("update:modelValue", val?.value || "");
-		}
-	},
+	set: (val) => emit("update:modelValue", val ?? ""),
 });
 
 const options = createResource({
@@ -102,6 +111,7 @@ const reloadOptions = (searchTextVal) => {
 		params: {
 			txt: searchTextVal,
 			doctype: props.doctype,
+			filters: props.filters,
 		},
 	});
 	options.reload();
@@ -129,5 +139,22 @@ watch(
 watch(
 	() => props.filters,
 	() => reloadOptions(""),
+	{ deep: true },
+);
+
+watch(
+	() => props.modelValue,
+	(value, previous) => {
+		if (!value && previous) {
+			searchText.value = "";
+			reloadOptions("");
+		} else if (
+			value &&
+			options.data &&
+			!options.data.some((option) => option.value === value)
+		) {
+			reloadOptions("");
+		}
+	},
 );
 </script>

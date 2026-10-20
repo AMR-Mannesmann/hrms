@@ -6,12 +6,12 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Roster</title>
 	</head>
-	<body class="text-gray-800">
+	<body class="text-ink-gray-8">
 		<div id="app"></div>
 		<div id="modals"></div>
 		<div id="popovers"></div>
 
-		<script>
+		<script id="roster-boot">
 			window.csrf_token = "{{ csrf_token }}";
 		</script>
 		<script type="module" src="/src/main.ts"></script>

@@ -1,6 +1,6 @@
 <template>
-	<Dialog :options="{ title: dialog.title, size: '4xl' }">
-		<template #body-content>
+	<Dialog v-model:open="open" :title="dialog.title" size="4xl">
+		<template #default>
 			<div class="grid grid-cols-2 gap-6">
 				<Link
 					doctype="Employee"
@@ -27,7 +27,7 @@
 					v-model="form.shift_type"
 					:disabled="!!props.shiftAssignmentName"
 				/>
-				<FormControl
+				<TextInput
 					type="date"
 					label="Start Date"
 					v-model="form.start_date"
@@ -39,7 +39,7 @@
 					v-model="form.shift_location"
 					:disabled="!!props.shiftAssignmentName"
 				/>
-				<FormControl
+				<TextInput
 					type="date"
 					label="End Date"
 					v-model="form.end_date"
@@ -65,16 +65,16 @@
 				<h4 class="font-semibold">Schedule Settings</h4>
 				<div class="grid grid-cols-2 gap-6">
 					<div class="space-y-1.5">
-						<div class="text-xs text-gray-600">Repeat On Days</div>
+						<div class="text-xs text-ink-gray-6">Repeat On Days</div>
 						<div
-							class="border rounded grid grid-flow-col h-7 justify-stretch overflow-clip"
+							class="border rounded-4 grid grid-flow-col h-7 justify-stretch overflow-clip"
 						>
 							<div
 								v-for="(isSelected, day) of repeatOnDays"
 								class="cursor-pointer flex flex-col"
 								:class="{
 									'border-r': day !== 'Sunday',
-									'bg-gray-100 text-gray-500': !isSelected,
+									'bg-surface-gray-2 text-ink-gray-5': !isSelected,
 									'pointer-events-none': !!props.shiftAssignmentName,
 								}"
 								@click="repeatOnDays[day] = !repeatOnDays[day]"
@@ -101,19 +101,17 @@
 			</div>
 
 			<Dialog
-				v-model="showDeleteDialog"
-				:options="{
-					title: deleteDialogOptions.title,
-					actions: [
-						{
-							label: 'Confirm',
-							variant: 'solid',
-							onClick: deleteDialogOptions.action,
-						},
-					],
-				}"
+				v-model:open="showDeleteDialog"
+				:title="deleteDialogOptions.title"
+				:actions="[
+					{
+						label: 'Confirm',
+						variant: 'solid',
+						onClick: deleteDialogOptions.action,
+					},
+				]"
 			>
-				<template #body-content>
+				<template #default>
 					<div v-html="deleteDialogOptions.message" />
 				</template>
 			</Dialog>
@@ -121,7 +119,7 @@
 		<template #actions>
 			<div class="flex space-x-3 justify-end">
 				<Dropdown v-if="props.shiftAssignmentName" :options="actions">
-					<Button size="md" label="Delete" class="w-28 text-red-600" />
+					<Button size="md" label="Delete" class="w-28 text-ink-red-6" />
 				</Dropdown>
 				<Button
 					size="md"
@@ -142,6 +140,7 @@ import { reactive, ref, computed, watch } from "vue";
 import {
 	Dialog,
 	FormControl,
+	TextInput,
 	Dropdown,
 	createDocumentResource,
 	createResource,
@@ -159,16 +158,15 @@ type Form = {
 		| "department"
 		| "employee"
 		| "shift_type"
-		| "shift_location"]: string | { value: string; label?: string };
+		| "shift_location"]: string;
 } & {
 	start_date: string;
 	end_date: string;
-	status: Status | { value: Status; label?: Status };
-	schedule?: string;
+	status: Status;
+	shift_schedule_assignment: string;
 };
 
 interface Props {
-	isDialogOpen: boolean;
 	shiftAssignmentName?: string;
 	selectedCell?: {
 		employee: string;
@@ -179,6 +177,8 @@ interface Props {
 		employee_name: string;
 	}[];
 }
+
+const open = defineModel<boolean>("open", { default: false });
 
 const props = withDefaults(defineProps<Props>(), {
 	employees: () => [],
@@ -296,7 +296,7 @@ const showShiftScheduleSettings = computed(() => {
 });
 
 watch(
-	() => props.isDialogOpen,
+	() => open.value,
 	(val) => {
 		if (!val) {
 			Object.assign(form, formObject);

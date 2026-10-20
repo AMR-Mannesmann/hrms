@@ -1,6 +1,6 @@
 <template>
 	<div class="flex flex-row justify-between items-center">
-		<h2 class="text-base font-semibold text-gray-800">
+		<h2 class="text-base-semibold text-ink-gray-7">
 			{{ __("Settle against Advances") }}
 		</h2>
 	</div>
@@ -10,32 +10,34 @@
 		<div
 			v-for="advance in expenseClaim.advances"
 			:key="advance.name"
-			class="flex flex-col bg-white border shadow-sm rounded p-3.5"
+			class="flex flex-col bg-surface-base border shadow-sm rounded-4 p-3.5"
 			:class="[
-				advance.selected ? 'border-gray-500' : '',
+				advance.selected ? 'border-outline-gray-5' : '',
 				isReadOnly ? '' : 'cursor-pointer',
 			]"
 			@click="toggleAdvanceSelection(advance)"
 		>
 			<div class="flex flex-row justify-between items-center">
 				<div class="flex flex-row items-start gap-3">
-					<FormControl
-						type="checkbox"
+					<Checkbox
 						class="mt-[1.5px]"
 						v-model="advance.selected"
+						@click.stop
 						:disabled="isReadOnly"
 					/>
 
 					<div class="flex flex-col items-start gap-1.5">
-						<div class="text-base font-semibold text-gray-800">
+						<div class="text-base-semibold text-ink-gray-7">
 							{{ advance.purpose || advance.employee_advance }}
 						</div>
 						<div class="flex flex-row items-center gap-3 justify-between">
-							<div class="text-xs font-normal text-gray-500">
-								{{ __("{0}: {1}", [
-									__("Unclaimed Amount"),
-									formatCurrency(advance.unclaimed_amount, expenseClaim.currency),
-								]) }}
+							<div class="text-xs font-normal text-ink-gray-4">
+								{{
+									__("{0}: {1}", [
+										__("Unclaimed Amount"),
+										formatCurrency(advance.unclaimed_amount, expenseClaim.currency),
+									])
+								}}
 							</div>
 						</div>
 					</div>
@@ -45,11 +47,11 @@
 					<span class="text-normal">
 						{{ currencySymbol }}
 					</span>
-					<Input
+					<TextInput
 						type="number"
 						class="w-20"
 						v-model="advance.allocated_amount"
-						@input="(v) => (advance.selected = v)"
+						@update:model-value="(v) => (advance.selected = Number(v) > 0)"
 						@click.stop
 						:disabled="isReadOnly"
 						:max="advance.unclaimed_amount"
@@ -65,6 +67,7 @@
 
 <script setup>
 import { computed, inject } from "vue"
+import { Checkbox, TextInput } from "frappe-ui"
 import { getCurrencySymbol } from "@/data/currencies"
 import { formatCurrency } from "@/utils/formatters"
 

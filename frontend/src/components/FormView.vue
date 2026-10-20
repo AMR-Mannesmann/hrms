@@ -1,30 +1,19 @@
 <template>
 	<div class="flex flex-col h-full w-full" v-if="isFormReady">
-		<div class="w-full h-full bg-white sm:w-96 flex flex-col">
+		<div class="w-full h-full bg-surface-base sm:w-96 flex flex-col">
 			<header
-				class="flex flex-row bg-white shadow-sm py-4 px-3 items-center sticky top-0 z-[1000]"
+				class="flex flex-row bg-surface-base shadow-sm py-4 px-3 items-center sticky top-0 z-[1000]"
 			>
-				<Button
-					variant="ghost"
-					class="!pl-0 hover:bg-white"
-					@click="router.back()"
-				>
-					<FeatherIcon name="chevron-left" class="h-5 w-5" />
+				<Button variant="ghost" class="!pl-0 hover:bg-surface-base" @click="router.back()">
+					<Icon name="lucide-chevron-left" class="h-5 w-5" />
 				</Button>
-				<div
-					v-if="id"
-					class="flex flex-row items-center gap-2 overflow-hidden grow"
-				>
+				<div v-if="id" class="flex flex-row items-center gap-2 overflow-hidden grow">
 					<h2
-						class="text-xl font-semibold text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis"
+						class="text-2xl-semibold text-ink-gray-8 whitespace-nowrap overflow-hidden text-ellipsis"
 					>
 						{{ __(props.doctype) }}
 					</h2>
-					<Badge
-						:label="id"
-						class="whitespace-nowrap text-[8px]"
-						variant="outline"
-					/>
+					<Badge :label="id" class="whitespace-nowrap text-[8px]" variant="outline" />
 					<Badge
 						v-if="status"
 						:label="__(status, null, doctype)"
@@ -44,37 +33,38 @@
 							{
 								label: __('Download PDF'),
 								condition: () => props.showDownloadPDFButton,
-								onClick: () => (handleDownload()),
+								onClick: () => handleDownload(),
 							},
 						]"
 						:button="{
 							label: __('Menu'),
-							icon: 'more-horizontal',
+							icon: 'lucide-more-horizontal',
 							variant: 'ghost',
+							disabled: isUpdatingDocument,
 						}"
 					/>
 				</div>
-				<h2 v-else class="text-2xl font-semibold text-gray-900">
-					{{ __('New {0}', [__(doctype)], props.doctype) }}
+				<h2 v-else class="text-3xl-semibold text-ink-gray-8">
+					{{ __("New {0}", [__(doctype)], props.doctype) }}
 				</h2>
 			</header>
 
 			<!-- Form -->
-			<div class="bg-white grow overflow-y-auto">
+			<div class="bg-surface-base grow overflow-y-auto">
 				<!-- Tabs -->
 				<template v-if="tabbedView">
 					<div
-						class="px-4 sticky top-0 z-[100] bg-white text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:text-gray-400 dark:border-gray-700"
+						class="px-4 sticky top-0 z-[100] bg-surface-base text-sm-medium text-center text-ink-gray-4 border-b border-outline-gray-2"
 					>
 						<ul class="flex -mb-px overflow-auto hide-scrollbar">
 							<li class="mr-2 whitespace-nowrap" v-for="tab in tabs">
 								<button
 									@click="activeTab = tab.name"
-									class="inline-block py-4 px-2 border-b-2 border-transparent rounded-t-lg"
+									class="inline-block py-4 px-2 border-b-2 border-transparent rounded-t-6"
 									:class="[
 										activeTab === tab.name
-											? '!text-gray-800 !border-gray-800'
-											: 'hover:text-gray-600 hover:border-gray-300',
+											? '!text-ink-gray-7 !border-outline-gray-8'
+											: 'hover:text-ink-gray-5 hover:border-outline-gray-3',
 									]"
 								>
 									{{ __(tab.name, null, props.doctype) }}
@@ -84,10 +74,7 @@
 					</div>
 
 					<template v-for="(fieldList, tabName, index) in tabFields">
-						<div
-							v-show="tabName === activeTab"
-							class="flex flex-col space-y-4 p-4"
-						>
+						<div v-show="tabName === activeTab" class="flex flex-col space-y-4 p-4">
 							<template v-for="field in fieldList" :key="field.fieldname">
 								<slot
 									v-if="field.fieldtype == 'Table'"
@@ -120,13 +107,14 @@
 								class="flex flex-row gap-2 items-center justify-center p-5"
 								v-if="isFileUploading"
 							>
-								<LoadingIndicator class="w-3 h-3 text-gray-800" />
-								<span class="text-gray-900 text-sm">{{ __("Uploading...") }} </span>
+								<LoadingIndicator class="w-3 h-3 text-ink-gray-7" />
+								<span class="text-ink-gray-8 text-sm">{{ __("Uploading...") }} </span>
 							</div>
 
 							<FileUploaderView
 								v-else-if="showAttachmentView && index === 0"
 								v-model="fileAttachments"
+								:inert="isUpdatingDocument"
 								@handleFileSelect="handleFileSelect"
 								@handleFileDelete="handleFileDelete"
 							/>
@@ -155,17 +143,15 @@
 					/>
 
 					<!-- Attachment upload -->
-					<div
-						class="flex flex-row gap-2 items-center justify-center p-5"
-						v-if="isFileUploading"
-					>
-						<LoadingIndicator class="w-3 h-3 text-gray-800" />
-						<span class="text-gray-900 text-sm">{{ __("Uploading...") }} </span>
+					<div class="flex flex-row gap-2 items-center justify-center p-5" v-if="isFileUploading">
+						<LoadingIndicator class="w-3 h-3 text-ink-gray-7" />
+						<span class="text-ink-gray-8 text-sm">{{ __("Uploading...") }} </span>
 					</div>
 
 					<FileUploaderView
 						v-else-if="showAttachmentView"
 						v-model="fileAttachments"
+						:inert="isUpdatingDocument"
 						@handleFileSelect="handleFileSelect"
 						@handleFileDelete="handleFileDelete"
 					/>
@@ -176,14 +162,16 @@
 			<!-- custom form button eg: Download button in salary slips -->
 			<div
 				v-if="!showFormButton"
-				class="px-4 pt-4 pb-4 standalone:pb-safe-bottom sm:w-96 bg-white sticky bottom-0 w-full drop-shadow-xl z-40 border-t rounded-t-lg"
+				class="px-4 pt-4 pb-4 standalone:pb-safe-bottom sm:w-96 bg-surface-base sticky bottom-0 w-full drop-shadow-xl z-40 border-t rounded-t-6"
 			>
 				<slot name="formButton"></slot>
 			</div>
 
 			<!-- workflow actions -->
 			<WorkflowActionSheet
-				v-else-if="!isFormDirty && workflow?.hasWorkflow"
+				v-else-if="
+					!isFormDirty && workflow?.hasWorkflow && !editorUploadBusy && !isUpdatingDocument
+				"
 				:doc="documentResource.doc"
 				:workflow="workflow"
 				@workflowApplied="reloadDoc()"
@@ -192,49 +180,49 @@
 			<!-- save/submit/cancel -->
 			<div
 				v-else-if="isFormDirty || (!workflow?.hasWorkflow && formButton)"
-				class="px-4 pt-4 pb-4 standalone:pb-safe-bottom sm:w-96 bg-white sticky bottom-0 w-full drop-shadow-xl z-40 border-t rounded-t-lg"
+				class="px-4 pt-4 pb-4 standalone:pb-safe-bottom sm:w-96 bg-surface-base sticky bottom-0 w-full drop-shadow-xl z-40 border-t rounded-t-6"
 			>
 				<ErrorMessage
 					class="mb-2"
 					:message="
-						formErrorMessage ||
-						docList?.insert?.error ||
-						documentResource?.setValue?.error
+						formErrorMessage || docList?.insert?.error || documentResource?.setValue?.error
 					"
 				/>
 
 				<Button
-					class="w-full rounded py-5 text-base disabled:bg-gray-700 disabled:text-white"
+					class="w-full rounded-4 py-5 text-base disabled:bg-surface-gray-8 disabled:text-ink-base"
 					:class="formButton === 'Cancel' ? 'shadow' : ''"
 					@click="formButton === 'Save' ? saveForm() : submitOrCancelForm()"
 					:variant="formButton === 'Cancel' ? 'subtle' : 'solid'"
+					:disabled="editorUploadBusy || isFileUploading || isUpdatingDocument"
 					:loading="
-						docList.insert.loading || documentResource?.setValue?.loading
+						isCompletingInsert || isUpdatingDocument || documentResource?.setValue?.loading
 					"
 				>
-					{{ __(formButton) }}
+					{{ createdDocument ? __("Retry Attachments") : __(formButton) }}
 				</Button>
 			</div>
 		</div>
 	</div>
 
 	<!-- Confirmation Dialogs -->
-	<Dialog v-model="showDeleteDialog">
-		<template #body-title>
-			<h2 class="text-xl font-bold">{{ __("Delete {0}", [__(props.doctype)]) }}</h2>
+	<Dialog v-model:open="showDeleteDialog">
+		<template #title>
+			<h2 class="text-2xl-bold">{{ __("Delete {0}", [__(props.doctype)]) }}</h2>
 		</template>
-		<template #body-content>
+		<template #default>
 			<p>
-				{{ __("Are you sure you want to delete the {0}", [__(props.doctype)])  }}
+				{{ __("Are you sure you want to delete the {0}", [__(props.doctype)]) }}
 				<span class="font-bold">{{ formModel.name }}</span>
 				?
 			</p>
 		</template>
 		<template #actions>
-			<div class="flex flex-row gap-4">
+			<div class="grid grid-cols-2 gap-4">
 				<Button
 					variant="outline"
 					class="py-5 w-full"
+					:disabled="isUpdatingDocument"
 					@click="showDeleteDialog = false"
 				>
 					{{ __("Cancel") }}
@@ -242,20 +230,21 @@
 				<Button
 					variant="solid"
 					theme="red"
+					:disabled="isUpdatingDocument"
 					@click="handleDocDelete"
 					class="py-5 w-full"
 				>
-					{{__("Delete") }}
+					{{ __("Delete") }}
 				</Button>
 			</div>
 		</template>
 	</Dialog>
 
-	<Dialog v-model="showSubmitDialog">
-		<template #body-title>
-			<h2 class="text-xl font-bold">{{ __("Confirm") }} </h2>
+	<Dialog v-model:open="showSubmitDialog">
+		<template #title>
+			<h2 class="text-2xl-bold">{{ __("Confirm") }}</h2>
 		</template>
-		<template #body-content>
+		<template #default>
 			<p>
 				{{ __("Permanently submit {0}", [__(props.doctype)]) }}
 				<span class="font-bold">{{ formModel.name }}</span>
@@ -263,10 +252,11 @@
 			</p>
 		</template>
 		<template #actions>
-			<div class="flex flex-row gap-4">
+			<div class="grid grid-cols-2 gap-4">
 				<Button
 					variant="outline"
 					class="py-5 w-full"
+					:disabled="isUpdatingDocument"
 					@click="showSubmitDialog = false"
 				>
 					{{ __("No") }}
@@ -274,6 +264,7 @@
 				<Button
 					variant="solid"
 					@click="handleDocUpdate('submit')"
+					:disabled="editorUploadBusy || isUpdatingDocument"
 					class="py-5 w-full"
 				>
 					{{ __("Yes") }}
@@ -282,11 +273,11 @@
 		</template>
 	</Dialog>
 
-	<Dialog v-model="showCancelDialog">
-		<template #body-title>
-			<h2 class="text-xl font-bold">{{ __("Confirm") }} </h2>
+	<Dialog v-model:open="showCancelDialog">
+		<template #title>
+			<h2 class="text-2xl-bold">{{ __("Confirm") }}</h2>
 		</template>
-		<template #body-content>
+		<template #default>
 			<p>
 				{{ __("Permanently cancel {0}", [__(props.doctype)]) }}
 				<span class="font-bold">{{ formModel.name }}</span
@@ -294,10 +285,11 @@
 			</p>
 		</template>
 		<template #actions>
-			<div class="flex flex-row gap-4">
+			<div class="grid grid-cols-2 gap-4">
 				<Button
 					variant="outline"
 					class="py-5 w-full"
+					:disabled="isUpdatingDocument"
 					@click="showCancelDialog = false"
 				>
 					{{ __("No") }}
@@ -305,6 +297,7 @@
 				<Button
 					variant="solid"
 					@click="handleDocUpdate('cancel')"
+					:disabled="editorUploadBusy || isUpdatingDocument"
 					class="py-5 w-full"
 				>
 					{{ __("Yes") }}
@@ -315,12 +308,12 @@
 </template>
 
 <script setup>
-import { computed, inject, nextTick, onMounted, ref, watch } from "vue"
+import { computed, inject, nextTick, onMounted, provide, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 import {
 	ErrorMessage,
 	Badge,
-	FeatherIcon,
+	Icon,
 	createListResource,
 	createDocumentResource,
 	toast,
@@ -335,6 +328,8 @@ import WorkflowActionSheet from "@/components/WorkflowActionSheet.vue"
 
 import { FileAttachment, guessStatusColor } from "@/composables"
 import useWorkflow from "@/composables/workflow"
+import { updateDocumentLifecycle } from "@/composables/documentLifecycle"
+import { EditorUploads, editorUploadsKey } from "@/composables/editorUploads"
 import { getCompanyCurrency } from "@/data/currencies"
 import { getLeaveStatus } from "@/data/leaves"
 import { formatCurrency } from "@/utils/formatters"
@@ -404,6 +399,19 @@ let showSubmitDialog = ref(false)
 let showCancelDialog = ref(false)
 let isFileUploading = ref(false)
 let workflow = ref(null)
+const createdDocument = ref(null)
+const isCompletingInsert = ref(false)
+const isUpdatingDocument = ref(false)
+const editorUploads = new EditorUploads(
+	() => ({ doctype: props.doctype, name: props.id || createdDocument.value?.name }),
+	() =>
+		!isCompletingInsert.value &&
+		!isUpdatingDocument.value &&
+		!createdDocument.value &&
+		!documentResource?.setValue?.loading
+)
+const editorUploadBusy = editorUploads.busy
+provide(editorUploadsKey, editorUploads)
 
 const formModel = computed({
 	get() {
@@ -457,9 +465,7 @@ const tabFields = computed(() => {
 	let lastFieldIndex = 0
 
 	props.tabs?.forEach((tab) => {
-		lastFieldIndex = props.fields.findIndex(
-			(field) => field.fieldname === tab.lastField
-		)
+		lastFieldIndex = props.fields.findIndex((field) => field.fieldname === tab.lastField)
 		fieldList = props.fields.slice(firstFieldIndex, lastFieldIndex + 1)
 		fieldsByTab[tab.name] = fieldList
 		firstFieldIndex = lastFieldIndex + 1
@@ -474,15 +480,13 @@ const attachedFiles = createResource({
 		dt: props.doctype,
 		dn: props.id,
 	},
-	transform(data) {
-		return data.map((file) => (file.uploaded = true))
-	},
 	onSuccess(data) {
-		fileAttachments.value = data
+		fileAttachments.value = data.map((file) => ({ ...file, uploaded: true }))
 	},
 })
 
 const handleFileSelect = (e) => {
+	if (isUpdatingDocument.value) return
 	if (props.id) {
 		uploadAllAttachments(props.doctype, props.id, [...e.target.files])
 	} else {
@@ -491,31 +495,31 @@ const handleFileSelect = (e) => {
 }
 
 const handleFileDelete = async (fileObj) => {
+	if (isUpdatingDocument.value) return
 	if (fileObj.uploaded) {
 		const fileAttachment = new FileAttachment(fileObj)
 		await fileAttachment.delete()
 		await attachedFiles.reload()
 	} else {
-		fileAttachments.value = fileAttachments.value.filter(
-			(file) => file.name !== fileObj.name
-		)
+		fileAttachments.value = fileAttachments.value.filter((file) => file.name !== fileObj.name)
 	}
 }
 
 async function uploadAllAttachments(documentType, documentName, attachments) {
 	isFileUploading.value = true
 
-	const uploadPromises = attachments.map((attachment) => {
-		const fileAttachment = new FileAttachment(attachment)
-		return fileAttachment
-			.upload(documentType, documentName, "")
-			.then((fileDoc) => {
+	const uploadPromises = attachments
+		.filter((file) => !file.uploaded)
+		.map((attachment) => {
+			const fileAttachment = new FileAttachment(attachment)
+			return fileAttachment.upload(documentType, documentName, "").then((fileDoc) => {
 				fileDoc.uploaded = true
+				attachment.uploaded = true
 				if (props.id) {
 					fileAttachments.value.push(fileDoc)
 				}
 			})
-	})
+		})
 
 	await Promise.allSettled(uploadPromises)
 	isFileUploading.value = false
@@ -525,28 +529,13 @@ async function uploadAllAttachments(documentType, documentName, attachments) {
 const docList = createListResource({
 	doctype: props.doctype,
 	insert: {
-		async onSuccess(data) {
-			toast({
-				title: __("Success"),
-				text: __("{0} created successfully!", [__(props.doctype)]),
-				icon: "check-circle",
-				position: "bottom-center",
-				iconClasses: "text-green-500",
-			})
-			await uploadAllAttachments(data.doctype, data.name, fileAttachments.value)
-
-			router.replace({
-				name: `${props.doctype.replace(/\s+/g, "")}DetailView`,
-				params: { id: data.name },
-			})
+		onSuccess(data) {
+			// Preserve the inserted document when attaching its editor files must be retried.
+			createdDocument.value = data
 		},
 		onError() {
-			toast({
-				title: __("Error"),
-				text: __("Error creating {0}", [__(props.doctype)]),
-				icon: "alert-circle",
-				position: "bottom-center",
-				iconClasses: "text-red-500",
+			toast.error(__("Error"), {
+				description: __("Error creating {0}", [__(props.doctype)]),
 			})
 			console.log(`Error creating ${props.doctype}`)
 		},
@@ -558,21 +547,13 @@ const documentResource = createDocumentResource({
 	name: props.id,
 	setValue: {
 		onSuccess() {
-			toast({
-				title: __("Success"),
-				text: __("{0} updated successfully!", [__(props.doctype)]),
-				icon: "check-circle",
-				position: "bottom-center",
-				iconClasses: "text-green-500",
+			toast.success(__("Success"), {
+				description: __("{0} updated successfully!", [__(props.doctype)]),
 			})
 		},
 		onError() {
-			toast({
-				title: __("Error"),
-				text: __("Error updating {0}", [__(props.doctype)]),
-				icon: "alert-circle",
-				position: "bottom-center",
-				iconClasses: "text-red-500",
+			toast.error(__("Error"), {
+				description: __("Error updating {0}", [__(props.doctype)]),
 			})
 			console.log(`Error updating ${props.doctype}`)
 		},
@@ -580,21 +561,13 @@ const documentResource = createDocumentResource({
 	delete: {
 		onSuccess() {
 			router.back()
-			toast({
-				title: __("Success"),
-				text: __("{0} deleted successfully!", [__(props.doctype)]),
-				icon: "check-circle",
-				position: "bottom-center",
-				iconClasses: "text-green-500",
+			toast.success(__("Success"), {
+				description: __("{0} deleted successfully!", [__(props.doctype)]),
 			})
 		},
 		onError() {
-			toast({
-				title: __("Error"),
-				text: __("Error deleting {0}", [__(props.doctype)]),
-				icon: "alert-circle",
-				position: "bottom-center",
-				iconClasses: "text-red-500",
+			toast.error(__("Error"), {
+				description: __("Error deleting {0}", [__(props.doctype)]),
 			})
 			console.log(`Error deleting ${props.doctype}`)
 		},
@@ -635,23 +608,41 @@ function hasPermission(action) {
 
 function isFieldReadOnly(field) {
 	return (
-		Boolean(field.read_only)
-		|| isFormReadOnly.value
-		|| (props.id && !permittedWriteFields.data?.includes(field.fieldname))
+		Boolean(field.read_only) ||
+		isFormReadOnly.value ||
+		(props.id && !permittedWriteFields.data?.includes(field.fieldname))
 	)
 }
 
-function handleDocInsert() {
-	if (!validateMandatoryFields()) return
-	docList.insert.submit(formModel.value)
+async function handleDocInsert() {
+	if (isCompletingInsert.value || editorUploadBusy.value || !validateMandatoryFields()) return
+	isCompletingInsert.value = true
+	try {
+		if (!createdDocument.value) await docList.insert.submit(formModel.value)
+		const doc = createdDocument.value
+		await editorUploads.attachTo(doc.doctype, doc.name)
+		await uploadAllAttachments(doc.doctype, doc.name, fileAttachments.value)
+		toast.success(__("Success"), {
+			description: __("{0} created successfully!", [__(props.doctype)]),
+		})
+		await router.replace({
+			name: `${props.doctype.replace(/\s+/g, "")}DetailView`,
+			params: { id: doc.name },
+		})
+	} catch (error) {
+		formErrorMessage.value = createdDocument.value
+			? __(
+					"The document was created, but its files could not be attached. Select Retry Attachments to finish saving."
+			  )
+			: error.messages?.join("\n") || error.message
+	} finally {
+		isCompletingInsert.value = false
+	}
 }
 
 function validateMandatoryFields() {
 	const errorFields = props.fields
-		.filter(
-			(field) =>
-				field.reqd && !field.hidden && !formModel.value[field.fieldname]
-		)
+		.filter((field) => field.reqd && !field.hidden && !formModel.value[field.fieldname])
 		.map((field) => field.label)
 
 	if (errorFields.length) {
@@ -666,27 +657,38 @@ function validateMandatoryFields() {
 }
 
 async function handleDocUpdate(action) {
-	if (documentResource.doc) {
-		let params = { ...formModel.value }
+	if (isUpdatingDocument.value || editorUploadBusy.value || isFileUploading.value) return
+	if (!documentResource.doc || !validateMandatoryFields()) return
 
-		if (!validateMandatoryFields()) return
-
-		if (action == "submit") {
-			params.docstatus = 1
-		} else if (action == "cancel") {
-			params.docstatus = 2
+	isUpdatingDocument.value = true
+	try {
+		if (action === "submit" || action === "cancel") {
+			await updateDocumentLifecycle(documentResource.originalDoc, action)
+			await documentResource.reload()
+		} else {
+			await documentResource.setValue.submit({ ...formModel.value })
+			await documentResource.get.promise
 		}
-
-		await documentResource.setValue.submit(params)
-		await documentResource.get.promise
 		resetForm()
+		await nextTick()
+		showSubmitDialog.value = false
+		showCancelDialog.value = false
+	} catch (error) {
+		formErrorMessage.value = error.messages?.join("\n") || error.message
+		if (action) toast.error(__("Error"), { description: formErrorMessage.value })
+	} finally {
+		isUpdatingDocument.value = false
 	}
-
-	if (action === "submit") showSubmitDialog.value = false
-	else if (action === "cancel") showCancelDialog.value = false
 }
 
 function saveForm() {
+	if (
+		isUpdatingDocument.value ||
+		editorUploadBusy.value ||
+		isCompletingInsert.value ||
+		isFileUploading.value
+	)
+		return
 	emit("validateForm")
 
 	if (props.id) {
@@ -697,7 +699,13 @@ function saveForm() {
 }
 
 function submitOrCancelForm() {
-	if (isFormDirty.value) return
+	if (
+		isUpdatingDocument.value ||
+		isFormDirty.value ||
+		editorUploadBusy.value ||
+		isFileUploading.value
+	)
+		return
 
 	if (formModel.value.docstatus === 0) {
 		emit("validateForm")
@@ -708,11 +716,13 @@ function submitOrCancelForm() {
 }
 
 function handleDocDelete() {
+	if (isUpdatingDocument.value) return
 	documentResource.delete.submit()
 	showDeleteDialog.value = false
 }
 
 async function reloadDoc() {
+	if (isUpdatingDocument.value) return
 	await documentResource.reload()
 	resetForm()
 }
@@ -757,6 +767,9 @@ async function setFormattedCurrency() {
 
 const isFormReadOnly = computed(() => {
 	if (!isFormReady.value) return true
+	if (isCompletingInsert.value || isUpdatingDocument.value || documentResource?.setValue?.loading)
+		return true
+	if (createdDocument.value) return true
 	if (!props.id) return false
 
 	// submitted & cancelled docs are read only

@@ -1,13 +1,12 @@
 <template>
-	<div v-if="user.data" class="min-h-screen">
+	<div v-if="user.data" class="min-h-screen bg-surface-base text-ink-gray-8">
 		<NavBar :user="user.data" />
 		<MonthView />
-		<Toasts />
 	</div>
 </template>
 
 <script setup lang="ts">
-import { Toasts, createResource } from "frappe-ui";
+import { createResource } from "frappe-ui";
 
 import NavBar from "../components/NavBar.vue";
 import MonthView from "./MonthView.vue";

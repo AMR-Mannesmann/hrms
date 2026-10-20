@@ -1,20 +1,16 @@
 <template>
 	<ion-page>
 		<ion-content class="ion-padding">
-			<div class="flex flex-col h-screen w-screen">
+			<div v-if="user.data" class="flex flex-col h-screen w-screen">
 				<div class="w-full sm:w-96">
 					<header
-						class="flex flex-row bg-white shadow-sm py-4 px-3 items-center justify-between border-b sticky top-0 z-10"
+						class="flex flex-row bg-surface-base shadow-sm py-4 px-3 items-center justify-between border-b sticky top-0 z-10"
 					>
 						<div class="flex flex-row items-center">
-							<Button
-								variant="ghost"
-								class="!pl-0 hover:bg-white"
-								@click="router.back()"
-							>
-								<FeatherIcon name="chevron-left" class="h-5 w-5" />
+							<Button variant="ghost" class="!pl-0 hover:bg-surface-base" @click="router.back()">
+								<Icon name="lucide-chevron-left" class="h-5 w-5" />
 							</Button>
-							<h2 class="text-xl font-semibold text-gray-900">{{ __("Profile") }}</h2>
+							<h2 class="text-2xl-semibold text-ink-gray-8">{{ __("Profile") }}</h2>
 						</div>
 					</header>
 
@@ -28,23 +24,23 @@
 						/>
 						<div
 							v-else
-							class="flex items-center justify-center bg-gray-200 uppercase text-gray-600 h-24 w-24 rounded-full object-cover"
+							class="flex items-center justify-center bg-surface-gray-3 uppercase text-ink-gray-5 h-24 w-24 rounded-full object-cover"
 						>
 							{{ user.data.first_name[0] }}
 						</div>
 
 						<div class="flex flex-col gap-1.5 items-center mt-2 mb-5">
-							<span v-if="employee" class="text-lg font-bold text-gray-900">{{
+							<span v-if="employee" class="text-lg-bold text-ink-gray-8">{{
 								employee?.data?.employee_name
 							}}</span>
-							<span v-if="employee" class="font-normal text-sm text-gray-500">{{
+							<span v-if="employee" class="text-sm font-normal text-ink-gray-4">{{
 								employee?.data?.designation
 							}}</span>
 						</div>
 
 						<!-- Profile Links -->
 						<div class="flex flex-col gap-5 my-4 w-full">
-							<div class="flex flex-col bg-white rounded">
+							<div class="flex flex-col bg-surface-base rounded-4">
 								<div
 									class="flex flex-row cursor-pointer flex-start p-4 items-center justify-between border-b"
 									v-for="link in profileLinks"
@@ -52,56 +48,37 @@
 									@click="openInfoModal(link)"
 								>
 									<div class="flex flex-row items-center gap-3 grow">
-										<FeatherIcon
-											:name="link.icon"
-											class="h-5 w-5 text-gray-500"
-										/>
-										<div class="text-base font-normal text-gray-800">
+										<Icon :name="link.icon" class="h-5 w-5 text-ink-gray-4" />
+										<div class="text-base font-normal text-ink-gray-7">
 											{{ link.title }}
 										</div>
 									</div>
-									<FeatherIcon
-										name="chevron-right"
-										class="h-5 w-5 text-gray-500"
-									/>
+									<Icon name="lucide-chevron-right" class="h-5 w-5 text-ink-gray-4" />
 								</div>
 							</div>
 						</div>
 
 						<!-- Settings -->
-						<div
-							class="flex flex-col gap-5 my-4 w-full"
-						>
-							<div class="flex flex-col bg-white rounded">
+						<div class="flex flex-col gap-5 my-4 w-full">
+							<div class="flex flex-col bg-surface-base rounded-4">
 								<router-link
 									:to="{ name: 'Settings' }"
 									class="flex flex-row cursor-pointer flex-start p-4 items-center justify-between border-b"
 								>
 									<div class="flex flex-row items-center gap-3 grow">
-										<FeatherIcon
-											name="settings"
-											class="h-5 w-5 text-gray-500"
-										/>
-										<div class="text-base font-normal text-gray-800">
+										<Icon name="lucide-settings" class="h-5 w-5 text-ink-gray-4" />
+										<div class="text-base font-normal text-ink-gray-7">
 											{{ __("Settings") }}
 										</div>
 									</div>
-									<FeatherIcon
-										name="chevron-right"
-										class="h-5 w-5 text-gray-500"
-									/>
+									<Icon name="lucide-chevron-right" class="h-5 w-5 text-ink-gray-4" />
 								</router-link>
 							</div>
 						</div>
 
-						<Button
-							@click="logout"
-							variant="outline"
-							theme="red"
-							class="w-full shadow py-4 mt-5"
-						>
+						<Button @click="logout" variant="outline" theme="red" class="w-full shadow py-4 mt-5">
 							<template #prefix>
-								<FeatherIcon name="log-out" class="w-4" />
+								<Icon name="lucide-log-out" class="w-4" />
 							</template>
 							{{ __("Log Out") }}
 						</Button>
@@ -117,7 +94,7 @@
 				:breakpoints="[0, 1]"
 			>
 				<ProfileInfoModal
-					v-if="selectedItem"
+					v-if="selectedItem && employeeDoc.doc && employeeDocType.data"
 					:title="selectedItem.title"
 					:data="
 						selectedItem.fields.map((field) => {
@@ -131,17 +108,20 @@
 						})
 					"
 				/>
+				<div v-else class="flex items-center justify-center gap-2 p-6">
+					<LoadingIndicator class="h-4 w-4" />
+					<span>{{ __("Loading...") }}</span>
+				</div>
 			</ion-modal>
-
-	</ion-content>
-</ion-page>
+		</ion-content>
+	</ion-page>
 </template>
 
 <script setup>
 import { computed, inject, ref, watch, onMounted, onBeforeUnmount } from "vue"
 import { useRouter } from "vue-router"
-import { IonPage, IonContent } from "@ionic/vue"
-import { FeatherIcon, createDocumentResource, createResource, toast } from "frappe-ui"
+import { IonPage, IonContent, IonModal } from "@ionic/vue"
+import { Icon, LoadingIndicator, createDocumentResource, createResource, toast } from "frappe-ui"
 
 import { showErrorAlert } from "@/utils/dialogs"
 import { formatCurrency } from "@/utils/formatters"
@@ -162,7 +142,7 @@ const router = useRouter()
 
 const profileLinks = [
 	{
-		icon: "user",
+		icon: "lucide-user",
 		title: __("Employee Details"),
 		fields: [
 			"employee_name",
@@ -174,7 +154,7 @@ const profileLinks = [
 		],
 	},
 	{
-		icon: "file",
+		icon: "lucide-file",
 		title: __("Company Information"),
 		fields: [
 			"company",
@@ -187,17 +167,12 @@ const profileLinks = [
 		],
 	},
 	{
-		icon: "book",
+		icon: "lucide-book",
 		title: __("Contact Information"),
-		fields: [
-			"cell_number",
-			"personal_email",
-			"company_email",
-			"preferred_email",
-		],
+		fields: ["cell_number", "personal_email", "company_email", "preferred_email"],
 	},
 	{
-		icon: "dollar-sign",
+		icon: "lucide-dollar-sign",
 		title: __("Salary Information"),
 		fields: [
 			"ctc",
@@ -218,9 +193,7 @@ const isInfoModalOpen = ref(false)
 const selectedItem = ref(null)
 
 const allowPushNotifications = computed(
-	() =>
-		window.frappe?.boot.push_relay_server_url &&
-		arePushNotificationsEnabled.data
+	() => window.frappe?.boot.push_relay_server_url && arePushNotificationsEnabled.data
 )
 
 const openInfoModal = async (request) => {
@@ -264,9 +237,7 @@ const employeeDocType = createResource({
 })
 
 const getFieldInfo = (fieldname) => {
-	const field = employeeDocType.data.find(
-		(field) => field.fieldname === fieldname
-	)
+	const field = employeeDocType.data.find((field) => field.fieldname === fieldname)
 	return [__(field?.label, null, "Employee"), field?.fieldtype]
 }
 
@@ -289,8 +260,6 @@ const logout = async () => {
 		showErrorAlert(msg)
 	}
 }
-
-
 
 onMounted(() => {
 	socket.emit("doctype_subscribe", DOCTYPE)

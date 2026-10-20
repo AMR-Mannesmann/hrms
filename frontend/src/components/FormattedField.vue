@@ -1,5 +1,5 @@
 <template>
-	<div v-if="!props.value" class="text-gray-600 text-base">-</div>
+	<div v-if="props.value == null || props.value === ''" class="text-ink-gray-5 text-base">-</div>
 
 	<Badge
 		v-else-if="props.fieldtype === 'Select'"
@@ -9,22 +9,21 @@
 		size="md"
 	/>
 
-	<div v-else-if="props.fieldtype === 'Date'" class="text-gray-900 text-base">
+	<div v-else-if="props.fieldtype === 'Date'" class="text-ink-gray-8 text-base">
 		{{ dayjs(props.value).format("D MMM YYYY") }}
 	</div>
 
-	<Input
+	<Checkbox
 		v-else-if="props.fieldtype === 'Check'"
-		type="checkbox"
 		label=""
-		v-model="props.value"
+		:model-value="[true, 1, '1'].includes(props.value)"
 		:disabled="true"
-		class="rounded-sm text-gray-800"
+		class="rounded-1 text-ink-gray-7"
 	/>
 
 	<div
 		v-else-if="['Small Text', 'Text', 'Long Text'].includes(props.fieldtype)"
-		class="text-gray-900 text-base bg-gray-100 rounded py-3 pl-3 mt-2"
+		class="text-ink-gray-8 text-base bg-surface-gray-2 rounded-4 py-3 pl-3 mt-2"
 	>
 		{{ props.value }}
 	</div>
@@ -37,7 +36,7 @@
 
 	<div
 		v-else-if="props.fieldtype === 'geolocation'"
-		class="rounded border-4 translate-z-0 block overflow-hidden w-full h-170 mt-2"
+		class="rounded-4 border-4 translate-z-0 block overflow-hidden w-full h-170 mt-2"
 	>
 		<iframe
 			width="100%"
@@ -54,12 +53,12 @@
 		</iframe>
 	</div>
 
-	<div v-else class="text-gray-900 text-base">{{ props.value }}</div>
+	<div v-else class="text-ink-gray-8 text-base">{{ props.value }}</div>
 </template>
 
 <script setup>
 import { inject } from "vue"
-import { Badge, FormControl, Input } from "frappe-ui"
+import { Badge, Checkbox } from "frappe-ui"
 
 import EmployeeAvatar from "@/components/EmployeeAvatar.vue"
 
@@ -74,7 +73,7 @@ const props = defineProps({
 const colorMap = {
 	Approved: "green",
 	Rejected: "red",
-	Open: "orange",
+	Open: "amber",
 	"Approved & Draft": "gray",
 	"Rejected & Draft": "gray",
 }

@@ -1,16 +1,16 @@
 <template>
 	<!-- Header -->
 	<div class="flex flex-row justify-between items-center mt-2">
-		<h2 class="text-base font-semibold text-gray-800">{{ __("Expenses") }} </h2>
+		<h2 class="text-base-semibold text-ink-gray-7">{{ __("Expenses") }}</h2>
 		<div class="flex flex-row gap-3 items-center">
-			<span class="text-base font-semibold text-gray-800">
+			<span class="text-base-semibold text-ink-gray-7">
 				{{ formatCurrency(expenseClaim.total_claimed_amount, expenseClaim.currency) }}
 			</span>
 			<Button
 				v-if="!isReadOnly"
 				id="add-expense-modal"
 				class="text-sm"
-				icon="plus"
+				icon="lucide-plus"
 				variant="subtle"
 				@click="openModal()"
 			/>
@@ -20,7 +20,7 @@
 	<!-- Table -->
 	<div
 		v-if="expenseClaim.expenses"
-		class="flex flex-col bg-white mt-5 rounded border overflow-auto"
+		class="flex flex-col bg-surface-base mt-5 rounded-4 border overflow-auto"
 	>
 		<div
 			class="flex flex-row p-3.5 items-center justify-between border-b cursor-pointer"
@@ -32,10 +32,10 @@
 				<div class="flex flex-row items-center justify-between">
 					<div class="flex flex-row items-start gap-3 grow">
 						<div class="flex flex-col items-start gap-1.5">
-							<div class="text-base font-normal text-gray-800">
+							<div class="text-base font-normal text-ink-gray-7">
 								{{ __(item.expense_type) }}
 							</div>
-							<div class="text-xs font-normal text-gray-500">
+							<div class="text-xs font-normal text-ink-gray-4">
 								<span>
 									{{
 										__("{0}: {1}", [
@@ -52,10 +52,10 @@
 						</div>
 					</div>
 					<div class="flex flex-row justify-end items-center gap-2">
-						<span class="text-gray-700 font-normal rounded text-base">
+						<span class="text-ink-gray-6 rounded-4 text-base font-normal">
 							{{ formatCurrency(item.amount, expenseClaim.currency) }}
 						</span>
-						<FeatherIcon name="chevron-right" class="h-5 w-5 text-gray-500" />
+						<Icon name="lucide-chevron-right" class="h-5 w-5 text-ink-gray-4" />
 					</div>
 				</div>
 			</div>
@@ -66,11 +66,9 @@
 	<CustomIonModal :isOpen="isModalOpen" @didDismiss="resetSelectedItem()">
 		<template #actionSheet>
 			<!-- Add Expense Action Sheet -->
-			<div
-				class="bg-white w-full flex flex-col items-center justify-center pb-5"
-			>
+			<div class="bg-surface-base w-full flex flex-col items-center justify-center pb-5">
 				<div class="w-full pt-8 pb-5 border-b text-center">
-					<span class="text-gray-900 font-bold text-lg">
+					<span class="text-ink-gray-8 text-lg-bold">
 						{{ modalTitle }}
 					</span>
 				</div>
@@ -92,33 +90,29 @@
 						/>
 					</div>
 
-					<div
-						v-if="!isReadOnly"
-						class="flex w-full flex-row items-center justify-between gap-3"
-					>
+					<div v-if="!isReadOnly" class="flex w-full flex-row items-center justify-between gap-3">
 						<Button
 							v-if="editingIdx !== null"
-							class="border-red-600 text-red-600 py-5 text-sm"
+							class="border-outline-red-6 text-ink-red-6 py-5 text-sm"
 							variant="outline"
 							theme="red"
 							@click="deleteExpenseItem()"
+							:disabled="editorUploadBusy"
 						>
 							<template #prefix>
-								<FeatherIcon name="trash" class="w-4" />
+								<Icon name="lucide-trash" class="w-4" />
 							</template>
 							{{ __("Delete") }}
 						</Button>
 						<Button
 							variant="solid"
-							class="w-full py-5 text-sm disabled:bg-gray-700 disabled:text-white"
+							class="min-w-0 flex-1 py-5 text-sm disabled:bg-surface-gray-8 disabled:text-ink-base"
 							@click="updateExpenseItem()"
-							:disabled="addButtonDisabled"
+							:disabled="addButtonDisabled || editorUploadBusy"
+							:loading="editorUploadBusy"
 						>
 							<template #prefix>
-								<FeatherIcon
-									:name="editingIdx === null ? 'plus' : 'check'"
-									class="w-4"
-								/>
+								<Icon :name="editingIdx === null ? 'lucide-plus' : 'lucide-check'" class="w-4" />
 							</template>
 							{{ editingIdx === null ? __("Add Expense") : __("Update Expense") }}
 						</Button>
@@ -130,7 +124,7 @@
 </template>
 
 <script setup>
-import { FeatherIcon, createResource } from "frappe-ui"
+import { Icon, createResource } from "frappe-ui"
 import { computed, ref, watch, inject } from "vue"
 
 import FormField from "@/components/FormField.vue"
@@ -141,6 +135,7 @@ import { claimTypesByID } from "@/data/claims"
 import { formatCurrency } from "@/utils/formatters"
 
 import { useCurrencyConversion } from "@/composables/useCurrencyConversion"
+import { editorUploadsKey } from "@/composables/editorUploads"
 
 const props = defineProps({
 	expenseClaim: {
@@ -152,11 +147,10 @@ const props = defineProps({
 		default: false,
 	},
 })
-const emit = defineEmits([
-	"add-expense-item",
-	"update-expense-item",
-	"delete-expense-item",
-])
+const editorUploads = inject(editorUploadsKey, null)
+const editorUploadBusy = computed(() => editorUploads?.busy.value || false)
+
+const emit = defineEmits(["add-expense-item", "update-expense-item", "delete-expense-item"])
 const dayjs = inject("$dayjs")
 const __ = inject("$translate")
 const expenseItem = ref({})
@@ -175,11 +169,13 @@ const openModal = async (item, idx) => {
 }
 
 const deleteExpenseItem = () => {
+	if (editorUploadBusy.value) return
 	emit("delete-expense-item", editingIdx.value)
 	resetSelectedItem()
 }
 
 const updateExpenseItem = () => {
+	if (editorUploadBusy.value) return
 	if (editingIdx.value === null) {
 		emit("add-expense-item", expenseItem.value)
 	} else {
@@ -206,11 +202,7 @@ const expensesTableFields = createResource({
 expensesTableFields.reload()
 
 const expenseClaimRef = computed(() => props.expenseClaim)
-useCurrencyConversion(
-	expensesTableFields,
-	expenseClaimRef,
-	["amount", "sanctioned_amount"]
-)
+useCurrencyConversion(expensesTableFields, expenseClaimRef, ["amount", "sanctioned_amount"])
 
 const modalTitle = computed(() => {
 	if (props.isReadOnly) return __("Expense Item")

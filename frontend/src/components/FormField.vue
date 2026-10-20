@@ -1,241 +1,195 @@
 <template>
 	<div v-if="showField" class="flex flex-col gap-1.5">
-		<!-- Label -->
 		<span
-			v-if="!['Check', 'Section Break', 'Column Break'].includes(props.fieldtype)"
-			:class="[
-				// mark field as mandatory
-				props.reqd ? `after:content-['_*'] after:text-red-600` : ``,
-				`block text-sm leading-5 text-gray-700`,
-			]"
+			v-if="!hideLabel && !['Check', 'Section Break', 'Column Break'].includes(fieldtype)"
+			class="block text-sm leading-5 text-ink-gray-6"
+			:class="reqd ? `after:content-['_*'] after:text-ink-red-6` : ''"
 		>
-			{{ props.label }}
+			{{ label }}
 		</span>
 
-		<!-- Select or Link field with predefined options -->
-		<Autocomplete
-			v-if="props.fieldtype === 'Select' || props.documentList"
-			:class="isReadOnly ? 'pointer-events-none' : ''"
-			:placeholder="__('Select {0}', [props.label])"
+		<Combobox
+			v-if="fieldtype === 'Select' || documentList"
+			v-bind="$attrs"
+			:placeholder="__('Select {0}', [label])"
 			:options="selectionList"
-			:modelValue="modelValue"
-			v-bind="$attrs"
+			:model-value="modelValue === '' ? null : modelValue"
 			:disabled="isReadOnly"
-			@update:modelValue="(v) => emit('update:modelValue', v?.value)"
+			@update:model-value="updateValue($event ?? '')"
 		/>
-
-		<!-- Link field -->
 		<Link
-			v-else-if="props.fieldtype === 'Link'"
-			:doctype="props.options"
-			:modelValue="modelValue"
-			:filters="props.linkFilters"
+			v-else-if="fieldtype === 'Link'"
+			v-bind="$attrs"
+			:doctype="options"
+			:model-value="modelValue"
+			:filters="linkFilters"
 			:disabled="isReadOnly"
-			@update:modelValue="(v) => emit('update:modelValue', v)"
+			@update:model-value="updateValue"
 		/>
-
-		<TextEditor
-			v-else-if="props.fieldtype === 'Text Editor'"
-			:content="modelValue"
-			:placeholder="__('Enter {0}', [props.label])"
-			@change="(v) => emit('update:modelValue', v)"
-			:fixedMenu="true"
+		<Editor
+			v-else-if="fieldtype === 'Text Editor'"
+			:model-value="modelValue || ''"
+			:extensions="editorExtensions"
+			:placeholder="__('Enter {0}', [label])"
 			:editable="!isReadOnly"
-			editor-class="prose-sm border-b border-x border-gray-200 rounded-b-sm p-1 min-h-[4rem]"
-		/>
-
-		<!-- Text -->
-		<Input
-			v-else-if="['Small Text', 'Text', 'Long Text'].includes(props.fieldtype)"
-			type="textarea"
-			:value="modelValue"
-			:placeholder="__('Enter {0}', [props.label])"
-			@input="(v) => emit('update:modelValue', v)"
-			@change="(v) => emit('change', v)"
-			v-bind="$attrs"
-			:disabled="isReadOnly"
-			class="h-15"
-		/>
-
-		<!-- Check -->
-		<Input
-			v-else-if="props.fieldtype === 'Check'"
-			type="checkbox"
-			:label="props.label"
-			:value="modelValue"
-			@input="(v) => emit('update:modelValue', v)"
-			@change="(v) => emit('change', v)"
-			v-bind="$attrs"
-			:disabled="isReadOnly"
-			class="rounded-sm text-gray-800"
-		/>
-
-		<!-- Data field -->
-		<Input
-			v-else-if="props.fieldtype === 'Data'"
-			type="text"
-			:value="modelValue"
-			@input="(v) => emit('update:modelValue', v)"
-			@change="(v) => emit('change', v)"
-			v-bind="$attrs"
-			:disabled="isReadOnly"
-		/>
-
-		<!-- Read only currency field -->
-		<Input
-			v-else-if="props.fieldtype === 'Currency' && isReadOnly"
-			type="text"
-			:value="modelValue"
-			@input="(v) => emit('update:modelValue', v)"
-			@change="(v) => emit('change', v)"
-			v-bind="$attrs"
-			:disabled="isReadOnly"
-		/>
-
-		<!-- Float/Int field -->
-		<Input
-			v-else-if="isNumberType"
-			type="number"
-			:value="modelValue"
-			@input="(v) => emit('update:modelValue', v)"
-			@change="(v) => emit('change', v)"
-			v-bind="$attrs"
-			:disabled="isReadOnly"
-		/>
-
-		<!-- Section Break -->
-		<div
-			v-else-if="props.fieldtype === 'Section Break'"
-			:class="props.addSectionPadding ? 'mt-2' : ''"
+			:upload-function="uploadEditorFile"
+			@update:model-value="updateValue"
 		>
+			<div class="overflow-hidden rounded-1 border border-outline-gray-2">
+				<EditorFixedMenu
+					v-if="!isReadOnly"
+					:items="articleToolbar"
+					class="overflow-x-auto border-b border-outline-gray-2 p-1"
+				/>
+				<EditorContent class="prose-sm min-h-[4rem] p-1" />
+			</div>
+		</Editor>
+		<Textarea
+			v-else-if="['Small Text', 'Text', 'Long Text'].includes(fieldtype)"
+			v-bind="$attrs"
+			:model-value="modelValue"
+			:placeholder="__('Enter {0}', [label])"
+			:disabled="isReadOnly"
+			class="min-h-15"
+			@update:model-value="updateValue"
+		/>
+		<Checkbox
+			v-else-if="fieldtype === 'Check'"
+			v-bind="$attrs"
+			:label="label"
+			:model-value="checkedValue"
+			:disabled="isReadOnly"
+			@update:model-value="updateValue"
+		/>
+		<TextInput
+			v-else-if="fieldtype === 'Data' || isNumberType"
+			v-bind="$attrs"
+			:type="isNumberType && !isReadOnly ? 'number' : 'text'"
+			:model-value="modelValue"
+			:disabled="isReadOnly"
+			@update:model-value="updateValue"
+		/>
+		<div v-else-if="fieldtype === 'Section Break'" :class="addSectionPadding ? 'mt-2' : ''">
 			<h2
-				v-if="props.label"
-				class="text-base font-semibold text-gray-800"
-				:class="props.addSectionPadding ? 'pt-4' : ''"
+				v-if="label"
+				class="text-base-semibold text-ink-gray-7"
+				:class="addSectionPadding ? 'pt-4' : ''"
 			>
-				{{ props.label }}
+				{{ label }}
 			</h2>
 		</div>
-
-		<!-- Date -->
-		<!-- FIXME: default datepicker has poor UI -->
-		<Input
-			v-else-if="props.fieldtype === 'Date'"
-			type="date"
-			:value="modelValue"
-			:placeholder="__('Select {0}', [props.label])"
-			:formatValue="(val) => dayjs(val).format('DD-MM-YYYY')"
-			@input="(v) => emit('update:modelValue', v)"
-			@change="(v) => emit('change', v)"
+		<DatePicker
+			v-else-if="fieldtype === 'Date'"
 			v-bind="$attrs"
+			:model-value="modelValue || ''"
+			:placeholder="__('Select {0}', [label])"
+			:format="dateFormat"
 			:disabled="isReadOnly"
-			:min="props.minDate"
-			:max="props.maxDate"
+			:min="minDate"
+			:max="maxDate"
+			@update:model-value="updateValue"
 		/>
-
-		<!-- Time -->
-		<!-- Datetime -->
+		<TimePicker
+			v-else-if="fieldtype === 'Time'"
+			v-bind="$attrs"
+			:model-value="modelValue || ''"
+			:placeholder="__('Select {0}', [label])"
+			:disabled="isReadOnly"
+			@update:model-value="updateValue"
+		/>
 		<DateTimePicker
-			v-else-if="props.fieldtype === 'Datetime'"
-			:value="modelValue"
-			:placeholder="`Select ${props.label}`"
-			:formatter="(val) => dayjs(val).format('DD-MM-YYYY HH:mm:ss')"
-			@update:modelValue="(v) => emit('update:modelValue', v)"
+			v-else-if="fieldtype === 'Datetime'"
 			v-bind="$attrs"
+			:model-value="modelValue || ''"
+			:placeholder="__('Select {0}', [label])"
+			:format="`${dateFormat} HH:mm:ss`"
 			:disabled="isReadOnly"
+			:min="minDate"
+			:max="maxDate"
+			@update:model-value="updateValue"
 		/>
-
-		<ErrorMessage :message="props.errorMessage" />
+		<ErrorMessage :message="errorMessage" />
 	</div>
 </template>
 
 <script setup>
-import { Autocomplete, DateTimePicker, ErrorMessage, Input, TextEditor } from "frappe-ui"
-import { computed, onMounted, inject } from "vue"
-
+import {
+	Checkbox,
+	Combobox,
+	DatePicker,
+	DateTimePicker,
+	ErrorMessage,
+	Textarea,
+	TextInput,
+	TimePicker,
+} from "frappe-ui"
+import {
+	articleToolbar,
+	Editor,
+	EditorContent,
+	EditorFixedMenu,
+	RichTextKit,
+} from "frappe-ui/editor"
+import { computed, inject, onMounted } from "vue"
 import Link from "@/components/Link.vue"
+import { EditorUploads, editorUploadsKey } from "@/composables/editorUploads"
 
 const __ = inject("$translate")
-
+const dayjs = inject("$dayjs")
 const props = defineProps({
 	fieldtype: String,
 	fieldname: String,
-	modelValue: [String, Number, Boolean, Array, Object],
-	default: [String, Number, Boolean, Array, Object],
+	modelValue: { type: [String, Number, Boolean, Array, Object], default: undefined },
+	default: { type: [String, Number, Boolean, Array, Object], default: undefined },
 	label: String,
+	hideLabel: Boolean,
 	options: [String, Array],
 	linkFilters: Object,
 	documentList: Array,
 	readOnly: [Boolean, Number],
+	disabled: Boolean,
 	reqd: [Boolean, Number],
-	hidden: {
-		type: [Boolean, Number],
-		default: false,
-	},
+	hidden: { type: [Boolean, Number], default: false },
 	errorMessage: String,
 	minDate: String,
 	maxDate: String,
-	addSectionPadding: {
-		type: Boolean,
-		default: true,
-	},
+	addSectionPadding: { type: Boolean, default: true },
 })
-
 const emit = defineEmits(["change", "update:modelValue"])
-const dayjs = inject("$dayjs")
-
+const dateFormat = (window.frappe?.boot?.sysdefaults?.date_format || "yyyy-mm-dd").toUpperCase()
+const editorExtensions = [RichTextKit]
+const editorUploads = inject(editorUploadsKey, null) || new EditorUploads()
+const uploadEditorFile = (file, options) => editorUploads.upload(file, options)
+const isNumberType = computed(() => ["Int", "Float", "Currency"].includes(props.fieldtype))
+const isReadOnly = computed(() => Boolean(props.readOnly || props.disabled))
+const checkedValue = computed(() => [true, 1, "1"].includes(props.modelValue))
 const showField = computed(() => {
-	if (props.readOnly && !isLayoutField.value && !props.modelValue) return false
-
-	return props.fieldtype !== "Table" && !props.hidden
+	if (props.hidden || props.fieldtype === "Table") return false
+	const isEmpty = props.modelValue == null || props.modelValue === ""
+	return !(
+		props.readOnly &&
+		isEmpty &&
+		!["Section Break", "Column Break"].includes(props.fieldtype)
+	)
 })
-
-const isNumberType = computed(() => {
-	return ["Int", "Float", "Currency"].includes(props.fieldtype)
-})
-
-const isLayoutField = computed(() => {
-	return ["Section Break", "Column Break"].includes(props.fieldtype)
-})
-
-const isReadOnly = computed(() => {
-	return Boolean(props.readOnly)
-})
-
 const selectionList = computed(() => {
-	if (props.fieldtype === "Link" && props.documentList) {
-		return props.documentList
-	} else if (props.fieldtype == "Select" && props.options) {
-		const options = props.options.split("\n")
-		return options.map((option) => ({
-			label: __(option),
-			value: option,
-		}))
-	}
-
-	return []
+	if (props.documentList) return props.documentList
+	const values = Array.isArray(props.options) ? props.options : (props.options || "").split("\n")
+	return values.map((value) => (typeof value === "object" ? value : { label: __(value), value }))
 })
 
-function setDefaultValue() {
-	// set default values
-	if (props.modelValue) return
-
-	if (props.default) {
-		if (props.fieldtype === "Check") {
-			emit("update:modelValue", props.default === "1" ? true : false)
-		} else if (props.fieldtype === "Date" && props.default === "Today") {
-			emit("update:modelValue", dayjs().format("YYYY-MM-DD"))
-		} else if (isNumberType.value) {
-			emit("update:modelValue", parseFloat(props.default || 0))
-		} else {
-			emit("update:modelValue", props.default)
-		}
-	} else {
-		props.fieldtype === "Check" ? emit("update:modelValue", false) : emit("update:modelValue", "")
-	}
+function updateValue(value) {
+	if (isReadOnly.value) return
+	emit("update:modelValue", value)
+	emit("change", value)
 }
 
 onMounted(() => {
-	setDefaultValue()
+	if (props.modelValue != null && props.modelValue !== "") return
+	let value = props.default
+	if (props.fieldtype === "Check") value = [true, 1, "1"].includes(value)
+	else if (props.fieldtype === "Date" && value === "Today") value = dayjs().format("YYYY-MM-DD")
+	else if (isNumberType.value && value != null && value !== "") value = parseFloat(value)
+	emit("update:modelValue", value ?? "")
 })
 </script>

@@ -5,12 +5,12 @@
 		:employeeName="props.doc.employee_name"
 	>
 		<template #left>
-			<ExpenseIcon class="h-5 w-5 text-gray-500" />
+			<ExpenseIcon class="h-5 w-5 text-ink-gray-4" />
 			<div class="flex flex-col items-start gap-1.5">
-				<div class="text-base font-normal text-gray-800">
+				<div class="text-base font-normal text-ink-gray-7">
 					{{ claimTitle }}
 				</div>
-				<div class="text-xs font-normal text-gray-500">
+				<div class="text-xs font-normal text-ink-gray-4">
 					<span>{{ claimDates }}</span>
 					<span class="whitespace-pre"> &middot; </span>
 					<span class="whitespace-nowrap">
@@ -20,14 +20,19 @@
 			</div>
 		</template>
 		<template #right>
-			<Badge variant="outline" :theme="statusMap[status]" :label="__(status, null, 'Expense Claim')" size="md" />
-			<FeatherIcon name="chevron-right" class="h-5 w-5 text-gray-500" />
+			<Badge
+				variant="outline"
+				:theme="statusMap[status]"
+				:label="__(status, null, 'Expense Claim')"
+				size="md"
+			/>
+			<Icon name="lucide-chevron-right" class="h-5 w-5 text-ink-gray-4" />
 		</template>
 	</ListItem>
 </template>
 
 <script setup>
-import { FeatherIcon, Badge } from "frappe-ui"
+import { Icon, Badge } from "frappe-ui"
 import { computed, inject } from "vue"
 
 import ListItem from "@/components/ListItem.vue"
@@ -56,9 +61,9 @@ const statusMap = {
 	Submitted: "blue",
 	Cancelled: "red",
 	Paid: "green",
-	Unpaid: "orange",
+	Unpaid: "amber",
 	"Approved & Draft": "gray",
-	"Approved & Unpaid": "orange",
+	"Approved & Unpaid": "amber",
 	"Approved & Submitted": "blue",
 	Rejected: "red",
 }
@@ -97,7 +102,6 @@ const claimDates = computed(() => {
 		)}`
 	}
 })
-
 
 const approvalStatus = computed(() => {
 	return props.doc.approval_status === "Draft" ? "Pending" : props.doc.approval_status

@@ -8,9 +8,10 @@
 		:is-open="isOpen"
 		@willPresent="showModalBackdrop = true"
 		@willDismiss="showModalBackdrop = false"
-		@didDismiss="() => emit('did-dismiss')"
+		@didDismiss="handleDismiss"
 	>
 		<slot name="actionSheet"></slot>
+		<div ref="portalTarget" class="contents" />
 	</ion-modal>
 
 	<!-- backdrop -->
@@ -27,8 +28,10 @@
  * @see https://github.com/ionic-team/ionic-framework/issues/24646
  * This custom ion-modal disables backdrop using backdrop-breakpoint=1 and we add a custom backdrop
  */
-import { ref } from "vue"
+import { nextTick, ref } from "vue"
 import { IonModal, modalController } from "@ionic/vue"
+import { providePortalTarget } from "frappe-ui"
+import { restoreMainContentAccessibility } from "@/utils/overlays"
 
 const props = defineProps({
 	trigger: {
@@ -42,4 +45,13 @@ const props = defineProps({
 })
 const emit = defineEmits(["did-dismiss"])
 const showModalBackdrop = ref(false)
+// Keep pickers and dialogs above the sheet, within its stacking context.
+const portalTarget = ref()
+providePortalTarget(portalTarget)
+
+async function handleDismiss() {
+	emit("did-dismiss")
+	await nextTick()
+	await restoreMainContentAccessibility()
+}
 </script>

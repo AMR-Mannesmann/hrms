@@ -3,7 +3,6 @@ import { __ } from "@/plugins/translationsPlugin"
 
 export function useDownloadPDF() {
 	async function downloadPDF({ doctype, docname, filename = null }) {
-		
 		const headers = {
 			"X-Frappe-Site-Name": window.location.hostname,
 		}
@@ -16,17 +15,14 @@ export function useDownloadPDF() {
 			headers,
 			body: new URLSearchParams({ doctype: doctype, docname: docname }),
 			responseType: "blob",
-		}).then((response) => {
+		})
+			.then((response) => {
 				if (response.ok) {
 					return response.blob()
 				} else {
-					toast({
-						title: __("Download Failed"),
-						text: __("Error downloading PDF"),
-						type: "error",
-						icon: "alert-circle",
+					toast.error(__("Download Failed"), {
+						description: __("Error downloading PDF"),
 						position: "bottom-center",
-						iconClasses: "text-red-500",
 					})
 				}
 			})
@@ -42,12 +38,9 @@ export function useDownloadPDF() {
 				}, 3000)
 			})
 			.catch((error) => {
-				toast({
-					title: __("Error"),
-					text: __("Error downloading PDF", [__(error)]),
-					icon: "alert-circle",
+				toast.error(__("Error"), {
+					description: __("Error downloading PDF", [__(error)]),
 					position: "bottom-center",
-					iconClasses: "text-red-500",
 				})
 			})
 	}

@@ -1,9 +1,9 @@
 <template>
 	<ion-app>
-		<ion-router-outlet id="main-content" />
-		<Toasts />
-
-		<InstallPrompt />
+		<FrappeUIProvider>
+			<ion-router-outlet id="main-content" />
+			<InstallPrompt />
+		</FrappeUIProvider>
 	</ion-app>
 </template>
 
@@ -11,7 +11,7 @@
 import { onMounted } from "vue"
 import { IonApp, IonRouterOutlet } from "@ionic/vue"
 
-import { Toasts } from "frappe-ui"
+import { FrappeUIProvider } from "frappe-ui"
 
 import InstallPrompt from "@/components/InstallPrompt.vue"
 import { showNotification } from "@/utils/pushNotifications"

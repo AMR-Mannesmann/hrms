@@ -3,18 +3,18 @@
 		v-if="actions.length > 0"
 		:class="[
 			props.view === 'form'
-				? 'px-4 pt-4 pb-4 standalone:pb-safe-bottom sm:w-96 bg-white sticky bottom-0 w-full drop-shadow-xl z-40 border-t rounded-t-lg'
+				? 'px-4 pt-4 pb-4 standalone:pb-safe-bottom sm:w-96 bg-surface-base sticky bottom-0 w-full drop-shadow-xl z-40 border-t rounded-t-6'
 				: 'flex w-full flex-row items-center justify-between gap-3 sticky bottom-0 border-t z-[100] p-4',
 		]"
 	>
 		<Button
 			v-if="props.view === 'form' || actions.length > 2"
 			@click="showTransitions()"
-			class="w-full rounded py-5 text-base disabled:bg-gray-700 disabled:text-white"
+			class="w-full rounded-4 py-5 text-base disabled:bg-surface-gray-8 disabled:text-ink-base"
 			variant="solid"
 		>
 			<template #prefix>
-				<FeatherIcon name="chevron-up" class="w-4" />
+				<Icon name="lucide-chevron-up" class="w-4" />
 			</template>
 			{{ __("Actions") }}
 		</Button>
@@ -22,13 +22,13 @@
 		<template v-else>
 			<Button
 				v-for="action in actions"
-				class="w-full py-5"
+				class="min-w-0 flex-1 py-5"
 				:variant="action.variant"
 				:theme="action.theme"
 				@click="applyWorkflow({ workflowAction: action.text })"
 			>
-				<template #prefix v-if="action.featherIcon">
-					<FeatherIcon :name="action.featherIcon" class="w-4" />
+				<template #prefix v-if="action.lucideIcon">
+					<Icon :name="action.lucideIcon" class="w-4" />
 				</template>
 				{{ __(action.text, null, props.doc?.doctype) }}
 			</Button>
@@ -46,7 +46,7 @@
 <script setup>
 import { IonActionSheet, modalController } from "@ionic/vue"
 import { computed, ref, onMounted, inject } from "vue"
-import { FeatherIcon } from "frappe-ui"
+import { Icon } from "frappe-ui"
 
 const props = defineProps({
 	doc: {
@@ -77,18 +77,18 @@ const getTransitions = async () => {
 		let role = ""
 		let theme = "gray"
 		let variant = "subtle"
-		let icon = ""
+		let lucideIcon = ""
 		let actionLabel = transition.toLowerCase()
 
 		if (actionLabel.includes("reject") || actionLabel.includes("cancel")) {
 			role = "destructive"
 			theme = "red"
 			variant = "subtle"
-			icon = "x"
+			lucideIcon = "lucide-x"
 		} else if (actionLabel.includes("approve")) {
 			theme = "green"
 			variant = "solid"
-			icon = "check"
+			lucideIcon = "lucide-check"
 		}
 
 		return {
@@ -96,7 +96,7 @@ const getTransitions = async () => {
 			role: role,
 			theme: theme,
 			variant: variant,
-			featherIcon: icon,
+			lucideIcon,
 			data: {
 				action: transition,
 			},
@@ -132,6 +132,6 @@ onMounted(() => getTransitions())
 
 <style scoped>
 ion-action-sheet {
-	--button-color: var(--text-gray-500);
+	--button-color: var(--ink-gray-4);
 }
 </style>

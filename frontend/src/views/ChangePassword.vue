@@ -2,38 +2,34 @@
 	<ion-page>
 		<ion-content :fullscreen="true">
 			<div class="flex flex-col h-full w-full">
-				<div class="w-full h-full bg-white sm:w-96 flex flex-col">
+				<div class="w-full h-full bg-surface-base sm:w-96 flex flex-col">
 					<header
-						class="flex flex-row bg-white shadow-sm py-4 px-3 items-center sticky top-0 z-[1000]"
+						class="flex flex-row bg-surface-base shadow-sm py-4 px-3 items-center sticky top-0 z-[1000]"
 					>
-						<Button
-							variant="ghost"
-							class="!pl-0 hover:bg-white"
-							@click="router.back()"
-						>
-							<FeatherIcon name="chevron-left" class="h-5 w-5" />
+						<Button variant="ghost" class="!pl-0 hover:bg-surface-base" @click="router.back()">
+							<Icon name="lucide-chevron-left" class="h-5 w-5" />
 						</Button>
-						<h2 class="text-xl font-semibold text-gray-900">{{ __("Change Password") }}</h2>
+						<h2 class="text-2xl-semibold text-ink-gray-8">{{ __("Change Password") }}</h2>
 					</header>
 
-					<div class="bg-white grow overflow-y-auto">
+					<div class="bg-surface-base grow overflow-y-auto">
 						<form class="flex flex-col space-y-4 p-4" @submit.prevent="submitPasswordChange">
-							<Input
-								:label="__('Current Password') + ' *'"
+							<TextInput
+								:label="__('Current Password')"
 								type="password"
 								v-model="currentPassword"
 								autocomplete="current-password"
 								required
 							/>
-							<Input
-								:label="__('New Password') + ' *'"
+							<TextInput
+								:label="__('New Password')"
 								type="password"
 								v-model="newPassword"
 								autocomplete="new-password"
 								required
 							/>
-							<Input
-								:label="__('Confirm New Password') + ' *'"
+							<TextInput
+								:label="__('Confirm New Password')"
 								type="password"
 								v-model="confirmPassword"
 								autocomplete="new-password"
@@ -43,11 +39,11 @@
 					</div>
 
 					<div
-						class="px-4 pt-4 pb-4 standalone:pb-safe-bottom sm:w-96 bg-white sticky bottom-0 w-full drop-shadow-xl z-40 border-t rounded-t-lg"
+						class="px-4 pt-4 pb-4 standalone:pb-safe-bottom sm:w-96 bg-surface-base sticky bottom-0 w-full drop-shadow-xl z-40 border-t rounded-t-6"
 					>
 						<ErrorMessage class="mb-2" :message="changePasswordError" />
 						<Button
-							class="w-full rounded py-5 text-base disabled:bg-gray-700 disabled:text-white"
+							class="w-full rounded-4 py-5 text-base disabled:bg-surface-gray-8 disabled:text-ink-base"
 							:loading="updatePasswordResource.loading"
 							variant="solid"
 							@click="submitPasswordChange"
@@ -64,7 +60,7 @@
 <script setup>
 import { IonPage, IonContent } from "@ionic/vue"
 import { useRouter } from "vue-router"
-import { FeatherIcon, toast, createResource, Input, ErrorMessage, Button } from "frappe-ui"
+import { Icon, toast, createResource, TextInput, ErrorMessage, Button } from "frappe-ui"
 
 import { inject, ref } from "vue"
 
@@ -80,12 +76,8 @@ const updatePasswordResource = createResource({
 	url: "frappe.core.doctype.user.user.update_password",
 	method: "POST",
 	onSuccess() {
-		toast({
-			title: __("Success"),
-			text: __("Your password has been updated."),
-			icon: "check-circle",
-			position: "bottom-center",
-			iconClasses: "text-green-500",
+		toast.success(__("Success"), {
+			description: __("Your password has been updated."),
 		})
 		resetForm()
 		router.back()

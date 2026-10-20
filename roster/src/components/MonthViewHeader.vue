@@ -1,26 +1,41 @@
 <template>
 	<div class="flex items-center">
 		<!-- Month Change -->
-		<div class="flex items-center bg-gray-50 rounded-md space-x-0.5">
-			<Button icon="chevron-left" variant="ghost" @click="emit('addToMonth', -1)" />
-			<span class="w-32 text-center font-medium text-base">
+		<div class="flex items-center bg-surface-gray-1 rounded-5 space-x-0.5">
+			<Button
+				icon="lucide-chevron-left"
+				aria-label="Previous month"
+				variant="ghost"
+				@click="emit('addToMonth', -1)"
+			/>
+			<span class="w-32 text-center text-base-medium">
 				{{ props.firstOfMonth.format("MMMM") }}, {{ firstOfMonth.format("YYYY") }}
 			</span>
-			<Button icon="chevron-right" variant="ghost" @click="emit('addToMonth', 1)" />
+			<Button
+				icon="lucide-chevron-right"
+				aria-label="Next month"
+				variant="ghost"
+				@click="emit('addToMonth', 1)"
+			/>
 		</div>
 
 		<!-- Filters -->
 		<div class="ml-auto space-x-2.5 flex">
 			<div v-for="[key, value] of Object.entries(filters)" :key="key" class="w-40">
 				<FormControl
-					type="autocomplete"
+					type="combobox"
 					:placeholder="toTitleCase(key)"
+					:aria-label="toTitleCase(key)"
 					:options="value.options"
 					v-model="value.model"
 					:disabled="!value.options.length"
 				/>
 			</div>
-			<Button icon="x" @click="Object.values(filters).forEach((d) => (d.model = null))" />
+			<Button
+				icon="lucide-x"
+				aria-label="Clear filters"
+				@click="Object.values(filters).forEach((d) => (d.model = null))"
+			/>
 		</div>
 	</div>
 </template>
@@ -52,7 +67,7 @@ const emit = defineEmits<{
 const filters: {
 	[K in FilterField]: {
 		options: string[];
-		model?: { value: string } | null;
+		model: string | null;
 	};
 } = reactive({
 	company: { options: [], model: null },
@@ -66,7 +81,7 @@ const filters: {
 watch(
 	() => filters.company.model,
 	(val) => {
-		if (val?.value) getFilterOptions("department", { company: val.value });
+		if (val) getFilterOptions("department", { company: val });
 		else {
 			filters.department.model = null;
 			filters.department.options = [];
@@ -76,12 +91,12 @@ watch(
 
 watch(filters, (val) => {
 	const newFilters = {
-		company: val.company.model?.value || "",
-		department: val.department.model?.value || "",
-		branch: val.branch.model?.value || "",
-		designation: val.designation.model?.value || "",
-		shift_type: val.shift_type.model?.value || "",
-		shift_location: val.shift_location.model?.value || "",
+		company: val.company.model || "",
+		department: val.department.model || "",
+		branch: val.branch.model || "",
+		designation: val.designation.model || "",
+		shift_type: val.shift_type.model || "",
+		shift_location: val.shift_location.model || "",
 	};
 	emit("updateFilters", newFilters);
 });
@@ -113,7 +128,7 @@ const getFilterOptions = (field: FilterField, listFilters: { company?: string } 
 		auto: true,
 		onSuccess: (data: { name: string }[]) => {
 			const value = field === "company" ? defaultCompany.data : "";
-			filters[field].model = { value };
+			filters[field].model = value || null;
 			filters[field].options = data.map((item) => item.name);
 		},
 		onError(error: { messages: string[] }) {

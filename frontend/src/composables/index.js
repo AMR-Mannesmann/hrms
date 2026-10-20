@@ -19,14 +19,8 @@ export class FileAttachment {
 				url: "hrms.api.upload_base64_file",
 				onSuccess: (fileDoc) => resolve(fileDoc),
 				onError: (error) => {
-					toast({
-						title: "Error",
-						text: `File upload failed for ${this.fileName}. ${
-							error.messages?.[0] || ""
-						}`,
-						icon: "alert-circle",
-						position: "bottom-center",
-						iconClasses: "text-red-500",
+					toast.error("Error", {
+						description: `File upload failed for ${this.fileName}. ${error.messages?.[0] || ""}`,
 					})
 					reject(error)
 				},
@@ -55,12 +49,8 @@ export class FileAttachment {
 				console.log("Deleted successfully ✅")
 			},
 			onError: (error) => {
-				toast({
-					title: "Error",
-					text: `File deletion failed. ${error.messages?.[0] || ""}`,
-					icon: "alert-circle",
-					position: "bottom-center",
-					iconClasses: "text-red-500",
+				toast.error("Error", {
+					description: `File deletion failed. ${error.messages?.[0] || ""}`,
 				})
 			},
 		}).submit({
@@ -80,8 +70,10 @@ export async function guessStatusColor(doctype, status) {
 	const stateMap = await statesResource.reload()
 
 	if (Object.keys(stateMap || {})?.length) {
-		if (stateMap?.[status] === "yellow") return "orange"
-		if (stateMap?.[status]) return stateMap?.[status]
+		const theme = stateMap?.[status]
+		if (["yellow", "orange"].includes(theme)) return "amber"
+		if (theme === "purple") return "violet"
+		if (["gray", "blue", "green", "amber", "red", "violet"].includes(theme)) return theme
 	}
 
 	let color = "gray"
@@ -90,16 +82,9 @@ export async function guessStatusColor(doctype, status) {
 	// a draft is not final whatever else its status says
 	if (hasWords(["draft"], status)) {
 		return color
-	} else if (
-		hasWords(
-			["open", "pending", "unpaid", "review", "medium", "not approved"],
-			status
-		)
-	) {
-		color = "orange"
-	} else if (
-		hasWords(["urgent", "high", "failed", "rejected", "error"], status)
-	) {
+	} else if (hasWords(["open", "pending", "unpaid", "review", "medium", "not approved"], status)) {
+		color = "amber"
+	} else if (hasWords(["urgent", "high", "failed", "rejected", "error"], status)) {
 		color = "red"
 	} else if (
 		hasWords(
