@@ -51,29 +51,58 @@
 			<!-- Form -->
 			<div class="bg-surface-base grow overflow-y-auto">
 				<!-- Tabs -->
-				<template v-if="tabbedView">
+				<Tabs v-if="tabbedView" v-model="activeTab" class="contents">
 					<div
-						class="px-4 sticky top-0 z-[100] bg-surface-base text-sm-medium text-center text-ink-gray-4 border-b border-outline-gray-2"
+						class="sticky top-0 z-[100] flex min-w-0 items-center gap-1 border-b border-outline-gray-2 bg-surface-base px-2"
 					>
-						<ul class="flex -mb-px overflow-auto hide-scrollbar">
-							<li class="mr-2 whitespace-nowrap" v-for="tab in tabs">
-								<button
-									@click="activeTab = tab.name"
-									class="inline-block py-4 px-2 border-b-2 border-transparent rounded-t-6"
-									:class="[
-										activeTab === tab.name
-											? '!text-ink-gray-7 !border-outline-gray-8'
-											: 'hover:text-ink-gray-5 hover:border-outline-gray-3',
-									]"
-								>
-									{{ __(tab.name, null, props.doctype) }}
-								</button>
-							</li>
-						</ul>
+						<Button
+							v-show="tabsOverflow"
+							icon="lucide-chevron-left"
+							variant="ghost"
+							class="shrink-0"
+							:aria-label="__('Scroll tabs left')"
+							:disabled="!canScrollTabsLeft"
+							@click="scrollTabs(-1)"
+						/>
+						<div
+							ref="tabViewport"
+							class="min-w-0 flex-1 overflow-x-auto overscroll-x-contain py-1"
+							@scroll="updateTabScroll"
+							@focusin="showTab($event.target)"
+						>
+							<TabList
+								variant="underline"
+								size="md"
+								class="w-max min-w-full !gap-2 !border-b-0"
+								:aria-label="__('{0} sections', [__(doctype)])"
+							>
+								<TabTrigger
+									v-for="tab in tabs"
+									:key="tab.name"
+									:value="tab.name"
+									:label="__(tab.name, null, props.doctype)"
+									class="shrink-0 whitespace-nowrap"
+								/>
+							</TabList>
+						</div>
+						<Button
+							v-show="tabsOverflow"
+							icon="lucide-chevron-right"
+							variant="ghost"
+							class="shrink-0"
+							:aria-label="__('Scroll tabs right')"
+							:disabled="!canScrollTabsRight"
+							@click="scrollTabs(1)"
+						/>
 					</div>
 
 					<template v-for="(fieldList, tabName, index) in tabFields">
-						<div v-show="tabName === activeTab" class="flex flex-col space-y-4 p-4">
+						<TabPanel
+							:value="tabName"
+							force-mount
+							v-show="tabName === activeTab"
+							class="flex flex-col space-y-4 p-4"
+						>
 							<template v-for="field in fieldList" :key="field.fieldname">
 								<slot
 									v-if="field.fieldtype == 'Table'"
@@ -126,9 +155,9 @@
 								@handleFileSelect="handleFileSelect"
 								@handleFileDelete="handleFileDelete"
 							/>
-						</div>
+						</TabPanel>
 					</template>
-				</template>
+				</Tabs>
 
 				<div class="flex flex-col space-y-4 p-4" v-else>
 					<FormField
@@ -300,7 +329,7 @@
 </template>
 
 <script setup>
-import { computed, inject, nextTick, onMounted, provide, ref, watch } from "vue"
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from "vue"
 import { useRouter } from "vue-router"
 import {
 	ErrorMessage,
@@ -313,6 +342,10 @@ import {
 	Dropdown,
 	Dialog,
 	LoadingIndicator,
+	Tabs,
+	TabList,
+	TabTrigger,
+	TabPanel,
 } from "frappe-ui"
 import FormField from "@/components/FormField.vue"
 import FileUploaderView from "@/components/FileUploaderView.vue"
@@ -380,6 +413,63 @@ const { downloadPDF } = useDownloadPDF()
 const __ = inject("$translate")
 
 let activeTab = ref(props.tabs?.[0].name)
+const tabViewport = ref(null)
+const tabsOverflow = ref(false)
+const canScrollTabsLeft = ref(false)
+const canScrollTabsRight = ref(false)
+let tabResizeObserver
+
+function updateTabScroll() {
+	const viewport = tabViewport.value
+	const list = viewport?.firstElementChild
+	if (!list) return
+	const viewportBounds = viewport.getBoundingClientRect()
+	const listBounds = list.getBoundingClientRect()
+	tabsOverflow.value = viewport.scrollWidth > viewport.clientWidth + 1
+	canScrollTabsLeft.value = listBounds.left < viewportBounds.left - 1
+	canScrollTabsRight.value = listBounds.right > viewportBounds.right + 1
+}
+
+function scrollTabs(direction) {
+	const viewport = tabViewport.value
+	viewport?.scrollBy({ left: direction * viewport.clientWidth * 0.8, behavior: "smooth" })
+}
+
+function showTab(element) {
+	const viewport = tabViewport.value
+	const tab = element?.closest('[role="tab"]')
+	if (!viewport || !tab) return
+	const viewportBounds = viewport.getBoundingClientRect()
+	const tabBounds = tab.getBoundingClientRect()
+	if (tabBounds.left < viewportBounds.left) {
+		viewport.scrollLeft += tabBounds.left - viewportBounds.left
+	} else if (tabBounds.right > viewportBounds.right) {
+		viewport.scrollLeft += tabBounds.right - viewportBounds.right
+	}
+	updateTabScroll()
+}
+
+function showActiveTab() {
+	showTab(tabViewport.value?.querySelector('[role="tab"][data-state="active"]'))
+}
+
+watch(activeTab, () => nextTick(showActiveTab))
+watch(
+	tabViewport,
+	(viewport) => {
+		tabResizeObserver?.disconnect()
+		if (!viewport) return
+		tabResizeObserver = new ResizeObserver(() => {
+			updateTabScroll()
+			showActiveTab()
+		})
+		tabResizeObserver.observe(viewport)
+		if (viewport.firstElementChild) tabResizeObserver.observe(viewport.firstElementChild)
+	},
+	{ flush: "post" }
+)
+onBeforeUnmount(() => tabResizeObserver?.disconnect())
+
 let fileAttachments = ref([])
 let statusColor = ref("")
 let formErrorMessage = ref("")

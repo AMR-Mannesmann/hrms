@@ -13,8 +13,10 @@
 
 <script setup>
 import { IonPage } from "@ionic/vue"
+import { inject } from "vue"
 import ListView from "@/components/ListView.vue"
 
+const __ = inject("$translate")
 
 const TAB_BUTTONS = ["My Claims", "Team Claims"] // __("My Claims"), __("Team Claims")
 const EXPENSE_CLAIM_FIELDS = [
