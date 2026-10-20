@@ -13,9 +13,9 @@
 
 				<div class="flex flex-row gap-2">
 					<Button
-						id="show-filter-modal"
 						icon="lucide-filter"
 						variant="subtle"
+						@click="isFilterModalOpen = true"
 						:class="[
 							areFiltersApplied
 								? '!border !border-outline-gray-8 !bg-surface-base !text-ink-gray-8 !font-semibold'
@@ -101,7 +101,7 @@
 			</div>
 		</div>
 
-		<CustomIonModal trigger="show-filter-modal">
+		<CustomIonModal :isOpen="isFilterModalOpen" @didDismiss="isFilterModalOpen = false">
 			<!-- Filter Action Sheet -->
 			<template #actionSheet>
 				<ListFiltersActionSheet
@@ -208,6 +208,7 @@ const activeTab = ref(props.tabButtons ? getButtonKey(props.tabButtons[0]) : und
 const areFiltersApplied = ref(false)
 const appliedFilters = ref([])
 const workflowStateField = ref(null)
+const isFilterModalOpen = ref(false)
 const isRequestModalOpen = ref(false)
 const selectedRequest = ref(null)
 
