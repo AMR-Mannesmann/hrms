@@ -2,27 +2,22 @@
 	<div class="flex flex-col h-full w-full" v-if="isFormReady">
 		<div class="w-full h-full bg-surface-base sm:w-96 flex flex-col">
 			<header
-				class="flex flex-row bg-surface-base shadow-sm py-4 px-3 items-center sticky top-0 z-[1000]"
+				class="shrink-0 border-b border-outline-gray-2 bg-surface-base px-4 py-3 sticky top-0 z-[1000]"
 			>
-				<Button variant="ghost" class="!pl-0 hover:bg-surface-base" @click="router.back()">
-					<Icon name="lucide-chevron-left" class="h-5 w-5" />
-				</Button>
-				<div v-if="id" class="flex flex-row items-center gap-2 overflow-hidden grow">
-					<h2
-						class="text-2xl-semibold text-ink-gray-8 whitespace-nowrap overflow-hidden text-ellipsis"
-					>
-						{{ __(props.doctype) }}
-					</h2>
-					<Badge :label="id" class="whitespace-nowrap text-[8px]" variant="outline" />
-					<Badge
-						v-if="status"
-						:label="__(status, null, doctype)"
-						:theme="statusColor"
-						class="whitespace-nowrap text-[8px]"
+				<div class="flex items-start gap-2">
+					<Button
+						variant="ghost"
+						icon="lucide-chevron-left"
+						class="-ml-2 shrink-0"
+						:aria-label="__('Back')"
+						@click="router.back()"
 					/>
-
+					<h2 class="min-w-0 flex-1 break-words text-2xl-semibold leading-7 text-ink-gray-8">
+						{{ id ? __(doctype) : __("New {0}", [__(doctype)], doctype) }}
+					</h2>
 					<Dropdown
-						class="ml-auto"
+						v-if="id"
+						class="shrink-0"
 						:options="[
 							{
 								label: __('Delete'),
@@ -43,17 +38,26 @@
 						}"
 					/>
 				</div>
-				<h2 v-else class="text-3xl-semibold text-ink-gray-8">
-					{{ __("New {0}", [__(doctype)], props.doctype) }}
-				</h2>
+				<div v-if="id" class="mt-1.5 flex min-w-0 items-center gap-2">
+					<span class="min-w-0 flex-1 truncate text-xs text-ink-gray-5" :title="id">
+						{{ id }}
+					</span>
+					<Badge
+						v-if="status"
+						:label="__(status, null, doctype)"
+						:theme="statusColor"
+						size="sm"
+						class="shrink-0 whitespace-nowrap"
+					/>
+				</div>
 			</header>
 
 			<!-- Form -->
-			<div class="bg-surface-base grow overflow-y-auto">
+			<div class="hide-scrollbar bg-surface-base grow overflow-y-auto">
 				<!-- Tabs -->
 				<Tabs v-if="tabbedView" v-model="activeTab" class="contents">
 					<div
-						class="sticky top-0 z-[100] flex min-w-0 items-center gap-1 border-b border-outline-gray-2 bg-surface-base px-2"
+						class="sticky top-0 z-[100] flex min-w-0 items-center gap-1 border-b border-outline-gray-2 bg-surface-base px-2 py-1.5"
 					>
 						<Button
 							v-show="tabsOverflow"
@@ -66,14 +70,14 @@
 						/>
 						<div
 							ref="tabViewport"
-							class="min-w-0 flex-1 overflow-x-auto overscroll-x-contain py-1"
+							class="hide-scrollbar min-w-0 flex-1 overflow-x-auto overscroll-x-contain py-1"
 							@scroll="updateTabScroll"
 							@focusin="showTab($event.target)"
 						>
 							<TabList
-								variant="underline"
+								variant="ghost"
 								size="md"
-								class="w-max min-w-full !gap-2 !border-b-0"
+								class="w-max min-w-full !gap-2 !bg-transparent !p-0"
 								:aria-label="__('{0} sections', [__(doctype)])"
 							>
 								<TabTrigger
@@ -81,7 +85,12 @@
 									:key="tab.name"
 									:value="tab.name"
 									:label="__(tab.name, null, props.doctype)"
-									class="shrink-0 whitespace-nowrap"
+									class="shrink-0 whitespace-nowrap rounded-4 !border"
+									:class="
+										activeTab === tab.name
+											? '!border-outline-gray-8 !bg-surface-gray-2'
+											: '!border-outline-gray-3 !bg-surface-base hover:!border-outline-gray-4'
+									"
 								/>
 							</TabList>
 						</div>
@@ -334,7 +343,6 @@ import { useRouter } from "vue-router"
 import {
 	ErrorMessage,
 	Badge,
-	Icon,
 	createListResource,
 	createDocumentResource,
 	toast,
